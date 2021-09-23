@@ -22,7 +22,7 @@ foreach(src_file ${GENERATED_FRONTEND_SRC})
         ${src_file}
         PROPERTIES
         GENERATED TRUE
-        )
+    )
 endforeach(src_file ${GENERATED_FRONTEND_SRC})
 
 add_custom_target(GenerateParser DEPENDS ${GENERATED_FRONTEND_SRC})
