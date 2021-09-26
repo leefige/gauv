@@ -14,7 +14,7 @@ using namespace mpc;
 using namespace antlr4;
 
 int main(int argc, const char **argv) {
-    ANTLRInputStream input("");
+    ANTLRInputStream input(";");
     MPCLexer lexer(&input);
     CommonTokenStream tokens(&lexer);
 

@@ -32,7 +32,7 @@ add_custom_command(OUTPUT ${GENERATED_FRONTEND_SRC}
     COMMAND
     ${PROJECT_SOURCE_DIR}/tools/generate.sh
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
-    DEPENDS ${PROJECT_SOURCE_DIR}/src/grammar/TLexer.g4 ${PROJECT_SOURCE_DIR}/src/grammar/TParser.g4
+    DEPENDS ${PROJECT_SOURCE_DIR}/src/grammar/MPCLexer.g4 ${PROJECT_SOURCE_DIR}/src/grammar/MPCParser.g4
 )
 
 include_directories(
