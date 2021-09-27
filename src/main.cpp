@@ -3,8 +3,7 @@
 //  Ref: https://github.com/antlr/antlr4/tree/master/runtime/Cpp/demo
 //
 
-#include "frontend/generated/MPCLexer.h"
-#include "frontend/generated/MPCParser.h"
+#include "frontend/frontend.h"
 
 #include <antlr4-runtime.h>
 

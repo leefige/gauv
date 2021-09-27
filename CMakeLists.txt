@@ -45,12 +45,6 @@ add_custom_command(OUTPUT ${GENERATED_FRONTEND_SRC}
 include_directories(
     # cpp runtime
     ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime
-    ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/atn
-    ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/dfa
-    ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/misc
-    ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/support
-    ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/tree
-    ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/utf8
     # generated includes
     ${PROJECT_SOURCE_DIR}/src/frontend/generated
     # frontend
