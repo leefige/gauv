@@ -1,20 +1,27 @@
 # -*- mode:cmake -*-
+cmake_minimum_required(VERSION 3.19)
+
+project(mpc-parser)
+
 if(NOT UNIX)
     message(WARNING "Unsupported operating system")
 endif()
+
+set(COMPILE_FLAGS
+    "-O2 -std=c++17"
+)
 
 set(ANTLR_JAR_LOCATION
     ${PROJECT_SOURCE_DIR}/lib/antlr-4.9.2-complete.jar
 )
 
 set(GENERATED_FRONTEND_SRC
-    ${PROJECT_SOURCE_DIR}/src/frontend/MPCLexer.cpp 
-    ${PROJECT_SOURCE_DIR}/src/frontend/MPCParser.cpp
-    ${PROJECT_SOURCE_DIR}/src/frontend/MPCParserListener.cpp
-    ${PROJECT_SOURCE_DIR}/src/frontend/MPCParserVisitor.cpp
-    # TODO: move these to src dir
-    ${PROJECT_SOURCE_DIR}/src/frontend/MPCParserBaseListener.cpp
-    ${PROJECT_SOURCE_DIR}/src/frontend/MPCParserBaseVisitor.cpp
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCLexer.cpp 
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParser.cpp
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParserListener.cpp
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParserVisitor.cpp
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParserBaseListener.cpp
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParserBaseVisitor.cpp
 )
 
 foreach(src_file ${GENERATED_FRONTEND_SRC})
@@ -44,12 +51,15 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/support
     ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/tree
     ${PROJECT_SOURCE_DIR}/runtime/Cpp/include/antlr4-runtime/utf8
-    # generated frontend
+    # generated includes
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated
+    # frontend
     ${PROJECT_SOURCE_DIR}/src/frontend
 )
 
 set(SRC 
     ${PROJECT_SOURCE_DIR}/src/main.cpp
+    # generated src
     ${GENERATED_FRONTEND_SRC}
 )
 

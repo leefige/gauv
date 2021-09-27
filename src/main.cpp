@@ -3,8 +3,8 @@
 //  Ref: https://github.com/antlr/antlr4/tree/master/runtime/Cpp/demo
 //
 
-#include "frontend/MPCLexer.h"
-#include "frontend/MPCParser.h"
+#include "frontend/generated/MPCLexer.h"
+#include "frontend/generated/MPCParser.h"
 
 #include <antlr4-runtime.h>
 
@@ -14,7 +14,7 @@ using namespace mpc;
 using namespace antlr4;
 
 int main(int argc, const char **argv) {
-    ANTLRInputStream input(";");
+    ANTLRInputStream input(std::string_view(";"));
     MPCLexer lexer(&input);
     CommonTokenStream tokens(&lexer);
 
