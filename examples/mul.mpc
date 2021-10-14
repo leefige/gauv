@@ -49,14 +49,22 @@ struct bundle {
     share operator[](par p);
 };
 
+<field F>
+struct matrix {
+    
+};
+
 proto: 
     out(par p, field val);
     out(par p, share{p} val);
+    out(bundle vals);
 ========================================================================
 */
 
+
+
 <sec T, field F>
-proto rand_2t(parset parties) {
+proto rand_2t(parset<F> parties) {
     // no input
 
     paral (par i : parties) {
@@ -83,14 +91,24 @@ proto rand_2t(parset parties) {
     }
 }
 
+// this is supposed to be a local protocol
 <sec T, field F>
-proto deg_reduce(parset parties, shareset{parties} hs) {
+proto deg_reduce(parset<F> parties, bundle<F> hs) {
 
 }
 
-proto mult(parset parties, shareset{parties} inputs) {
-    // assert(parties.size == 2);
-    // assert(inputs.size == 2);
+<sec T, field F>
+proto mult(parset<F> parties, bundle<F> beta, bundle<F> gamma) {
+    // local mul
+    // WARNING: * means local share multiplication
+    bundle<F> s = beta * gamma;
 
+    // randomize
+    bundle<F> sigma = rand_2t<T, F>(parties);
+    bundle<F> randomized = s + sigma;
 
+    // degree reduce
+    bundle<F> delta = deg_reduce<T, F>(parties, randomized);
+
+    out(delta);
 }
