@@ -1,10 +1,96 @@
-<sec T>
-proto rand_2t(pars parties) {
-    share<2*T> outputs;
-    for (p : parties) {
-        outputs[p] = rand();
+/*
+struct field {
+    uint base;
+};
+
+<field F>
+struct par {
+    uint idx;   // can be directly used as index
+    F alpha;
+
+    @contr
+    par(F alpha);
+};
+
+// support iteration
+<field F>
+struct parset {
+    uint size;
+    par<F> m_pars[size];
+
+    par<F> operator[](uint idx);
+};
+
+<field F, uint deg>
+struct poly {
+    par party;
+    uint degree;
+
+    F eval(par p);
+
+    @contr
+    poly{par p};
+};
+
+<field F>
+struct share {
+    par party;
+    F val;
+
+    @contr
+    share{par p};
+};
+
+<field F>
+struct bundle {
+    parset parties;
+    share m_shares[parties.size];
+    
+    share operator[](par p);
+};
+
+proto: 
+    out(par p, field val);
+    out(par p, share{p} val);
+========================================================================
+*/
+
+<sec T, field F>
+proto rand_2t(parset parties) {
+    // no input
+
+    paral (par i : parties) {
+        // each party chooses a 2-t poly with constant 0: q_i(x)
+        poly<F, 2 * T>{i} q_i = rand_poly(2 * T, 0);
+
+        // send s_i,j = q_i(alpha_j) to j
+        for (par j : parties) {
+            share{j} s_i_j = q_i.eval(j);
+            i.send(j, s_i_j);
+        }
+    }
+    
+    paral (par i : parties) {
+        // each party i computes delta_i
+        share{i} delta_i = 0;
+        for (par j : parties) {
+            share{i} s_j_i = i.recv(j);
+            delta_i = delta_i + s_j_i;
+        }
+
+        // each party outputs delta_i
+        out(i, delta_i);
     }
 }
 
-<sec T>
-proto deg_reduce(pars parties, )
+<sec T, field F>
+proto deg_reduce(parset parties, shareset{parties} hs) {
+
+}
+
+proto mult(parset parties, shareset{parties} inputs) {
+    // assert(parties.size == 2);
+    // assert(inputs.size == 2);
+
+
+}
