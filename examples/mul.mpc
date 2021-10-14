@@ -1,0 +1,10 @@
+<sec T>
+proto rand_2t(pars parties) {
+    share<2*T> outputs;
+    for (p : parties) {
+        outputs[p] = rand();
+    }
+}
+
+<sec T>
+proto deg_reduce(pars parties, )
