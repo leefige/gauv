@@ -3,7 +3,7 @@ struct field {
     uint base;
 };
 
-<field F>
+template <field F>
 struct par {
     uint idx;   // can be directly used as index
     F alpha;
@@ -13,7 +13,7 @@ struct par {
 };
 
 // support iteration
-<field F>
+template <field F>
 struct parset {
     uint size;
     par<F> m_pars[size];
@@ -21,10 +21,12 @@ struct parset {
     par<F> operator[](uint idx);
 };
 
-<field F, uint deg>
+template <field F, uint deg>
 struct poly {
     par party;
     uint degree;
+    F const;
+    F coeffs[degree];
 
     F eval(par p);
 
@@ -32,7 +34,7 @@ struct poly {
     poly{par p};
 };
 
-<field F>
+template <field F>
 struct share {
     par party;
     F val;
@@ -41,7 +43,8 @@ struct share {
     share{par p};
 };
 
-<field F>
+// a number distributed onto all parties (can be reconstructed to that number??)
+template <field F>
 struct bundle {
     parset parties;
     share m_shares[parties.size];
@@ -49,27 +52,66 @@ struct bundle {
     share operator[](par p);
 };
 
-<field F>
+template <field F>
 struct matrix {
-    
+    par party;
+
+    F get()(uint i, uint j);
+    void set()(uint i, uint j, F v);
+
+    matrix operator@(matrix other);
+
+    matrix inv();
+
+    @contr
+    matrix{par p}(uint r, uint c);
 };
 
 proto: 
     out(par p, field val);
-    out(par p, share{p} val);
+    out(share{p} val);
     out(bundle vals);
-========================================================================
 */
 
+/*=================================================*/
+
+template <field F>
+macro vandermonde(parset<F> parties) -> matrix<F>{common} {
+    matrix<F>{common} output(parties.size, parties.size);
+    for (int i = 0; i < parties.size; i++) {
+        for (int j = 0; j < parties.size; j++) {
+            output.set(i, j, pow(parties[i].alpha, j));
+        }
+    }
+    return output;
+}
+
+template <field F>
+macro matrix_pt(parset<F> parties, uint T) -> matrix<F>{common} {
+    matrix<F>{common} output(parties.size, parties.size);
+    for (int i = 0; i < T; i++) {
+        output.set(i, i, 1);
+    }
+    return output;
+}
+
+template <field F>
+macro matrix_reduce(parset<F> parties, uint T) -> matrix<F>{common} {
+    matrix<F>{common} van = vandermonde(parties);
+    matrix<F>{common} pt = matrix_pt(parties, T);
+    return van @ pt @ van.inv();
+}
+
+/*=================================================*/
 
 
-<sec T, field F>
+template <sec T, field F>
 proto rand_2t(parset<F> parties) {
     // no input
 
     paral (par i : parties) {
         // each party chooses a 2-t poly with constant 0: q_i(x)
-        poly<F, 2 * T>{i} q_i = rand_poly(2 * T, 0);
+        poly<F, 2 * T>{i} q_i = poly_gen(2 * T, 0);
 
         // send s_i,j = q_i(alpha_j) to j
         for (par j : parties) {
@@ -87,17 +129,27 @@ proto rand_2t(parset<F> parties) {
         }
 
         // each party outputs delta_i
-        out(i, delta_i);
+        out(delta_i);
     }
 }
 
 // this is supposed to be a local protocol
-<sec T, field F>
-proto deg_reduce(parset<F> parties, bundle<F> hs) {
+template <sec T, field F>
+proto const_matmul(parset<F> parties, matrix<F>{common} array, bundle<F> vec[parties.size]) {
+    paral (par p : parties) {
 
+    }
 }
 
-<sec T, field F>
+// this is supposed to be a local protocol
+template <sec T, field F>
+proto deg_reduce(parset<F> parties, bundle<F> hs[parties.size]) {
+    matrix<F>{common} array = matrix_reduce(parties, T);
+    bundle<F> trunc = const_matmul<T, F>(parties, array, hs);
+    out(trunc);
+}
+
+template <sec T, field F>
 proto mult(parset<F> parties, bundle<F> beta, bundle<F> gamma) {
     // local mul
     // WARNING: * means local share multiplication
@@ -112,3 +164,10 @@ proto mult(parset<F> parties, bundle<F> beta, bundle<F> gamma) {
 
     out(delta);
 }
+
+
+/*
+proto: unit of verification, take shares or numbers as inputs, use `out` to specify protocol output
+sec T: T-privacy, T should be an uint (0, parites.size]
+poly_gen: take a random tape as input
+*/
