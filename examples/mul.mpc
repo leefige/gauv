@@ -48,18 +48,20 @@ template <field F>
 struct bundle {
     parset parties;
     share m_shares[parties.size];
-    
+
     share operator[](par p);
 };
 
 template <field F>
 struct matrix {
     par party;
+    uint r;
+    uint c;
 
     F get()(uint i, uint j);
     void set()(uint i, uint j, F v);
 
-    matrix operator@(matrix other);
+    matrix operator*(matrix other);
 
     matrix inv();
 
@@ -67,7 +69,7 @@ struct matrix {
     matrix{par p}(uint r, uint c);
 };
 
-proto: 
+proto:
     out(par p, field val);
     out(share{p} val);
     out(bundle vals);
@@ -76,8 +78,8 @@ proto:
 /*=================================================*/
 
 template <field F>
-macro vandermonde(parset<F> parties) -> matrix<F>{common} {
-    matrix<F>{common} output(parties.size, parties.size);
+macro vandermonde(parset<F> parties) -> matrix<F>{} {
+    matrix<F>{} output(parties.size, parties.size);
     for (int i = 0; i < parties.size; i++) {
         for (int j = 0; j < parties.size; j++) {
             output.set(i, j, pow(parties[i].alpha, j));
@@ -87,8 +89,8 @@ macro vandermonde(parset<F> parties) -> matrix<F>{common} {
 }
 
 template <field F>
-macro matrix_pt(parset<F> parties, uint T) -> matrix<F>{common} {
-    matrix<F>{common} output(parties.size, parties.size);
+macro matrix_pt(parset<F> parties, uint T) -> matrix<F>{} {
+    matrix<F>{} output(parties.size, parties.size);
     for (int i = 0; i < T; i++) {
         output.set(i, i, 1);
     }
@@ -96,35 +98,36 @@ macro matrix_pt(parset<F> parties, uint T) -> matrix<F>{common} {
 }
 
 template <field F>
-macro matrix_reduce(parset<F> parties, uint T) -> matrix<F>{common} {
-    matrix<F>{common} van = vandermonde(parties);
-    matrix<F>{common} pt = matrix_pt(parties, T);
-    return van @ pt @ van.inv();
+macro matrix_reduce(parset<F> parties, uint T) -> matrix<F>{} {
+    matrix<F>{} van = vandermonde(parties);
+    matrix<F>{} pt = matrix_pt(parties, T);
+    return van * pt * van.inv();
 }
 
 /*=================================================*/
 
 
+// no input
 template <sec T, field F>
-proto rand_2t(parset<F> parties) {
-    // no input
-
+proto f_rand_2t(parset<F> parties) {
+    // each party chooses a 2-t poly with constant 0: q_i(x)
     paral (par i : parties) {
-        // each party chooses a 2-t poly with constant 0: q_i(x)
         poly<F, 2 * T>{i} q_i = poly_gen(2 * T, 0);
 
         // send s_i,j = q_i(alpha_j) to j
         for (par j : parties) {
-            share{j} s_i_j = q_i.eval(j);
+            share<F>{j} s_i_j = q_i.eval(j);
             i.send(j, s_i_j);
         }
     }
-    
+
+    // sync()?
+
+    // each party i computes delta_i
     paral (par i : parties) {
-        // each party i computes delta_i
-        share{i} delta_i = 0;
+        share<F>{i} delta_i = 0;
         for (par j : parties) {
-            share{i} s_j_i = i.recv(j);
+            share<F>{i} s_j_i = i.recv(j);
             delta_i = delta_i + s_j_i;
         }
 
@@ -135,32 +138,40 @@ proto rand_2t(parset<F> parties) {
 
 // this is supposed to be a local protocol
 template <sec T, field F>
-proto const_matmul(parset<F> parties, matrix<F>{common} array, bundle<F> vec[parties.size]) {
-    paral (par p : parties) {
-
+proto f_const_matmul(parset<F> parties, matrix<F>{} mat, bundle<F> vec[parties.size]) {
+    // assert(mat.r == mat.c);
+    // assert(mat.c == parties.size);
+    paral (par p_i : parties) {
+        share<F>{p_i} res_i = 0;
+        for (int j = 0; j < parties.size; j++) {
+            // local const mult gate & addition gate
+            res_i = res_i + vec[j][p_i] * mat.get(p_i.idx, j);
+        }
+        out(res_i);
     }
 }
 
 // this is supposed to be a local protocol
 template <sec T, field F>
-proto deg_reduce(parset<F> parties, bundle<F> hs[parties.size]) {
-    matrix<F>{common} array = matrix_reduce(parties, T);
-    bundle<F> trunc = const_matmul<T, F>(parties, array, hs);
+proto f_deg_reduce(parset<F> parties, bundle<F> hs[parties.size]) {
+    matrix<F>{} array = matrix_reduce(parties, T);
+    bundle<F> trunc = f_const_matmul<T, F>(parties, array, hs);
     out(trunc);
 }
 
+// two shares mult protocol
 template <sec T, field F>
-proto mult(parset<F> parties, bundle<F> beta, bundle<F> gamma) {
+proto f_mult(parset<F> parties, bundle<F> beta, bundle<F> gamma) {
     // local mul
     // WARNING: * means local share multiplication
     bundle<F> s = beta * gamma;
 
     // randomize
-    bundle<F> sigma = rand_2t<T, F>(parties);
+    bundle<F> sigma = f_rand_2t<T, F>(parties);
     bundle<F> randomized = s + sigma;
 
     // degree reduce
-    bundle<F> delta = deg_reduce<T, F>(parties, randomized);
+    bundle<F> delta = f_deg_reduce<T, F>(parties, randomized);
 
     out(delta);
 }
@@ -168,6 +179,6 @@ proto mult(parset<F> parties, bundle<F> beta, bundle<F> gamma) {
 
 /*
 proto: unit of verification, take shares or numbers as inputs, use `out` to specify protocol output
-sec T: T-privacy, T should be an uint (0, parites.size]
+sec T: T-privacy, T should be a uint (0, parites.size]
 poly_gen: take a random tape as input
 */

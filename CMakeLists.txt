@@ -16,7 +16,7 @@ set(ANTLR_JAR_LOCATION
 )
 
 set(GENERATED_FRONTEND_SRC
-    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCLexer.cpp 
+    ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCLexer.cpp
     ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParser.cpp
     ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParserListener.cpp
     ${PROJECT_SOURCE_DIR}/src/frontend/generated/MPCParserVisitor.cpp
@@ -34,7 +34,7 @@ endforeach(src_file ${GENERATED_FRONTEND_SRC})
 
 add_custom_target(GenerateParser DEPENDS ${GENERATED_FRONTEND_SRC})
 add_custom_command(OUTPUT ${GENERATED_FRONTEND_SRC}
-    COMMAND 
+    COMMAND
     ${CMAKE_COMMAND} -E make_directory ${PROJECT_SOURCE_DIR}/src/frontend/
     COMMAND
     ${PROJECT_SOURCE_DIR}/tools/generate.sh
@@ -51,7 +51,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/src/frontend
 )
 
-set(SRC 
+set(SRC
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     # generated src
     ${GENERATED_FRONTEND_SRC}
@@ -87,6 +87,6 @@ target_link_libraries(mpc-parser
 )
 
 install(TARGETS mpc-parser
-    DESTINATION "share" 
-    COMPONENT dev 
+    DESTINATION "share"
+    COMPONENT dev
 )
