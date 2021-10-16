@@ -77,6 +77,9 @@ proto:
 
 /*=================================================*/
 
+
+template<typename T> void proto_mult(T i);
+
 template <field F>
 macro vandermonde(parset<F> parties) -> matrix<F>{} {
     matrix<F>{} output(parties.size, parties.size);
