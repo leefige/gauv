@@ -14,7 +14,7 @@ class field {
     base_t _val;
 public:
     /* forbid implicit conversion */
-    explicit field(const base_t& val) : _val(val % BASE) {}
+    explicit field(const base_t& val) noexcept : _val(val % BASE) {}
     explicit operator base_t() const { return _val; }
 
     constexpr base_t base() const { return BASE; }
@@ -67,7 +67,7 @@ public:
 
     friend std::ostream& operator<<(std::ostream& o, const field<BASE>& f)
     {
-        return o << f._val << "_F";
+        return o << f._val << "_F{" << BASE << "}";
     }
 };
 

@@ -25,7 +25,7 @@ public:
         q_t(x) = secret + a_1 * x^1 + a_2 * x^2 + ... + a_t * x^t.
         coeffs: {a_1, a_2, ..., a_t}
      */
-    poly(const P& party, const F& secret, const std::array<F, DEG>& coeffs) :
+    poly(const P& party, const F& secret, const std::array<F, DEG>& coeffs) noexcept :
         _party(party), _secret(secret), _coeffs(coeffs) {}
 
     F eval(const P& party) const

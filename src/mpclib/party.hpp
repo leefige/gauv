@@ -2,7 +2,7 @@
 
 #include "field.hpp"
 
-#include <memory>
+#include <vector>
 #include <ostream>
 #include <sstream>
 #include <initializer_list>
@@ -18,8 +18,8 @@ class par {
     const size_t _idx;
     const field<BASE> _alpha;
 public:
-    explicit par(size_t idx, base_t alpha) : _idx(idx), _alpha(alpha) {}
-    explicit par(size_t idx, field<BASE> alpha) : _idx(idx), _alpha(alpha) {}
+    explicit par(const size_t& idx, const base_t& alpha) noexcept : _idx(idx), _alpha(alpha) {}
+    explicit par(const size_t& idx, const field<BASE>& alpha) noexcept : _idx(idx), _alpha(alpha) {}
 
     constexpr const field<BASE>& alpha() const { return _alpha; }
     constexpr const size_t& idx() const { return _idx; }
@@ -37,7 +37,7 @@ public:
     std::string to_string() const
     {
         std::stringstream ss;
-        ss << "<party " << _idx << "[" << _alpha << "]>";
+        ss << "<party " << _idx << ": " << _alpha << ">";
         return ss.str();
     }
 
@@ -50,15 +50,19 @@ public:
 template<base_t BASE>
 class parset {
     const size_t _size;
-    /* this unique_ptr will forbid copy & assign construction */
-    const std::unique_ptr<par<BASE>[]> _pars;
+    const std::vector<par<BASE>> _pars;
+
+    parset(const parset<BASE>&) = delete;
+    parset<BASE>& operator=(const parset<BASE>&) = delete;
+    parset<BASE>& operator=(parset&&) = delete;
+
 public:
     /* allow implicit construction */
-    parset(const std::initializer_list<par<BASE>>& args) :
-        _size(args.size()), _pars(new par<BASE>{*args.begin()}) {}
+    parset(const std::initializer_list<par<BASE>>& args) noexcept :
+        _size(args.size()), _pars(args) {}
 
     /* allow moving construction */
-    parset(parset&& right) :
+    parset(parset&& right) noexcept :
         _size(right._size), _pars(std::move(right._pars)) {}
 
     constexpr const size_t& size() const { return _size; }
