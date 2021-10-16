@@ -14,7 +14,9 @@ class poly {
     using F = field<BASE>;
     using P = par<BASE>;
 
+    /* party designed to be const ref. maybe useful??? */
     const P& _party;
+
     const F _secret;
     const std::array<F, DEG> _coeffs;
 
