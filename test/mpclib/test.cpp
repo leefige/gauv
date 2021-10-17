@@ -36,9 +36,25 @@ int main() {
 
     std::cout << ps2[0] << " " << ps[1] << std::endl;
 
-    // 8 + x + 3 * x^2
+    // q(x) = 8 + x + 3 * x^2
     poly<BASE, 2> qx(p1, F(8), {F(1), F(3)});
+    // q(5) = 88
     std::cout << qx.eval(p0) << std::endl;
+
+
+    share<BASE> s11(p1, F(6));
+    share<BASE> s12(p1, F(7));
+    share<BASE> s01(p0, F(11));
+
+    try {
+        s11 + s01;
+    } catch (const std::exception& e) {
+        std::cout << "Caught! " << e.what() << std::endl;
+    }
+
+    auto s13 = s11 + s12;
+    auto s14 = s11 * s12;
+    std::cout << s13 << " " << s14 << std::endl;
 
     return 0;
 }
