@@ -11,7 +11,7 @@
 
 namespace mpc {
 
-using size_t = __ssize_t;
+using size_t = uint32_t;
 
 template<base_t BASE>
 class par {

@@ -9,7 +9,9 @@
 
 namespace mpc {
 
-template<base_t BASE, uint32_t DEG>
+using sec_t = uint32_t;
+
+template<base_t BASE, sec_t DEG>
 class poly {
     using F = field<BASE>;
     using P = par<BASE>;
@@ -35,6 +37,22 @@ public:
             res += factor * _coeffs[i];
         }
         return res;
+    }
+
+    std::string to_string() const
+    {
+        std::stringstream ss;
+        ss << "<poly{" << _party << "} " << _secret;
+        for (int i = 0; i < DEG; i++) {
+            ss << "+" << _coeffs[i] << "*x^" << i + 1;
+        }
+        ss << ">";
+        return ss.str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& o, const poly<BASE, DEG>& p)
+    {
+        return o << p.to_string();
     }
 };
 

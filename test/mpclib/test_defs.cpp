@@ -1,4 +1,4 @@
-#include "../../src/mpclib/mpc.hpp"
+#include "../../src/mpclib/defs.hpp"
 
 #include <iostream>
 
