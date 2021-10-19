@@ -5,6 +5,7 @@
 #include "mpc_exceptions.hpp"
 
 #include <sstream>
+#include <unordered_map>
 
 namespace mpc {
 
@@ -13,13 +14,14 @@ class share {
     using F = field<BASE>;
     using P = par<BASE>;
 
-    /* party designed to be const ref. maybe useful??? */
-    const P& _party;
+    const P _party;
     const F _val;
 
 public:
-    explicit share(const P& party) : _party(party), _val(0) {}
-    explicit share(const P& party, const F& value) : _party(party), _val(value) {}
+    explicit share(const P& party) noexcept : _party(party), _val(0) {}
+    explicit share(const P& party, const F& value) noexcept : _party(party), _val(value) {}
+
+    const P& party() const { return _party; }
 
     share operator+(const share<BASE>& other) const
     {
@@ -59,6 +61,41 @@ public:
     {
         return o << s.to_string();
     }
+};
+
+template<base_t BASE>
+class bundle {
+    const parset<BASE> _parties;
+    const std::vector<share<BASE>> _shares;
+    std::unordered_map<size_t, size_t> _mapping;
+
+public:
+    explicit bundle(const parset<BASE>& parties, const std::vector<share<BASE>>& shares) :
+        _parties(parties), _shares(shares)
+    {
+        if (_parties.size() != _shares.size()) {
+            throw argc_missmatch(_parties.size(), _shares.size());
+        }
+
+
+        for (int i = 0; i < _parties.size(); i++) {
+            if (_parties[i] != _shares[i].party()) {
+                throw party_missmatch(_parties[i], _shares[i].party());
+            }
+            _mapping.insert(std::make_pair(_parties[i].idx(), i));
+        }
+    }
+
+    const parset<BASE>& parties() const
+    {
+        return _parties;
+    }
+
+    const share<BASE>& operator[](const par<BASE>& party) const
+    {
+        return _shares[_mapping.at(party.idx())];
+    }
+
 };
 
 } /* namespace mpc */

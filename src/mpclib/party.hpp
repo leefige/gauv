@@ -52,7 +52,6 @@ class parset {
     const size_t _size;
     const std::vector<par<BASE>> _pars;
 
-    parset(const parset<BASE>&) = delete;
     parset<BASE>& operator=(const parset<BASE>&) = delete;
     parset<BASE>& operator=(parset&&) = delete;
 
@@ -65,8 +64,14 @@ public:
     parset(parset&& right) noexcept :
         _size(right._size), _pars(std::move(right._pars)) {}
 
+    parset(const parset<BASE>& other) noexcept :
+        _size(other._size), _pars(other._pars) {}
+
     constexpr const size_t& size() const { return _size; }
     constexpr const par<BASE>& operator[](size_t idx) const { return _pars[idx]; }
+
+    constexpr const auto begin() const { return _pars.begin(); }
+    constexpr const auto end() const { return _pars.end(); }
 };
 
 } /* namespace mpc */

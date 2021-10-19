@@ -24,4 +24,20 @@ public:
     }
 };
 
+class argc_missmatch: public std::exception {
+    std::string msg;
+public:
+    argc_missmatch(int want, int get) noexcept
+    {
+        std::stringstream ss;
+        ss << "Argument number missmatch: want " << want << ", get " << get;
+        msg = ss.str();
+    }
+
+    virtual const char* what() const noexcept override
+    {
+        return msg.c_str();
+    }
+};
+
 } /* namespace mpc */

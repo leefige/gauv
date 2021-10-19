@@ -56,5 +56,22 @@ int main() {
     auto s14 = s11 * s12;
     std::cout << s13 << " " << s14 << std::endl;
 
+
+    bundle<BASE> b0(ps, {s01, s11});
+
+    try {
+        bundle<BASE> b1(ps, {s12, s11});
+    } catch (const std::exception& e) {
+        std::cout << "Caught! " << e.what() << std::endl;
+    }
+
+    try {
+        bundle<BASE> b2(ps, {s12});
+    } catch (const std::exception& e) {
+        std::cout << "Caught! " << e.what() << std::endl;
+    }
+
+    std::cout << b0[p0] << " " << b0[p1] << std::endl;
+
     return 0;
 }
