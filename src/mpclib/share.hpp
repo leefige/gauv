@@ -86,16 +86,57 @@ public:
         }
     }
 
-    const parset<BASE>& parties() const
-    {
-        return _parties;
-    }
+    const parset<BASE>& parties() const { return _parties; }
 
     const share<BASE>& operator[](const par<BASE>& party) const
     {
         return _shares[_mapping.at(party.idx())];
     }
 
+    bundle<BASE> operator+(const bundle<BASE>& other) const
+    {
+        if (_parties != other._parties) {
+            throw party_missmatch(_parties, other._parties);
+        }
+
+        std::vector<share<BASE>> res;
+        res.reserve(_shares.size());
+        for (const auto& p : _parties) {
+            res.push_back((*this)[p] + other[p]);
+        }
+
+        return bundle<BASE>(_parties, res);
+    }
+
+    bundle<BASE> operator-(const bundle<BASE>& other) const
+    {
+        if (_parties != other._parties) {
+            throw party_missmatch(_parties, other._parties);
+        }
+
+        std::vector<share<BASE>> res;
+        res.reserve(_shares.size());
+        for (const auto& p : _parties) {
+            res.push_back((*this)[p] - other[p]);
+        }
+
+        return bundle<BASE>(_parties, res);
+    }
+
+    bundle<BASE> operator*(const bundle<BASE>& other) const
+    {
+        if (_parties != other._parties) {
+            throw party_missmatch(_parties, other._parties);
+        }
+
+        std::vector<share<BASE>> res;
+        res.reserve(_shares.size());
+        for (const auto& p : _parties) {
+            res.push_back((*this)[p] * other[p]);
+        }
+
+        return bundle<BASE>(_parties, res);
+    }
 };
 
 } /* namespace mpc */

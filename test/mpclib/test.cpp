@@ -6,7 +6,7 @@
 
 using namespace mpc;
 
-constexpr base_t BASE = 97U;
+constexpr base_t BASE = 23U;
 
 using F = field<BASE>;
 using F_other = field<23>;
@@ -73,5 +73,21 @@ int main() {
 
     std::cout << b0[p0] << " " << b0[p1] << std::endl;
 
+    share<BASE> s02(p0, F(15));
+    bundle<BASE> b1(ps, {s02, s13});
+    std::cout << b1[p0] << " " << b1[p1] << std::endl;
+
+    try {
+        bundle<BASE> b2(pp, {s01});
+        auto b3 = b0 + b2;
+    } catch (const std::exception& e) {
+        std::cout << "Caught! " << e.what() << std::endl;
+    }
+
+    auto b3 = b0 + b1;
+    std::cout << b3[p0] << b3[p1] << std::endl;
+
+    auto b4 = b0 * b1;
+    std::cout << b4[p0] << b4[p1] << std::endl;
     return 0;
 }

@@ -67,11 +67,44 @@ public:
     parset(const parset<BASE>& other) noexcept :
         _size(other._size), _pars(other._pars) {}
 
+    bool operator!=(const parset<BASE>& other) const
+    {
+        if (_size != other._size) {
+            return true;
+        }
+
+        for (int i = 0; i < _size; i++) {
+            if (_pars[i] != other._pars[i]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool operator==(const parset<BASE>& other) const { return !(*this != other); }
+
     constexpr const size_t& size() const { return _size; }
     constexpr const par<BASE>& operator[](size_t idx) const { return _pars[idx]; }
 
     constexpr const auto begin() const { return _pars.begin(); }
     constexpr const auto end() const { return _pars.end(); }
+
+    std::string to_string() const
+    {
+        std::stringstream ss;
+        ss << "<party_set [";
+        for (const auto& p : _pars) {
+            ss << p;
+        }
+        ss << "]>";
+        return ss.str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& o, const parset<BASE>& p)
+    {
+        return o << p.to_string();
+    }
 };
 
 } /* namespace mpc */

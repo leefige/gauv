@@ -18,6 +18,13 @@ public:
         msg = ss.str();
     }
 
+    party_missmatch(const parset<BASE>& p1, const parset<BASE>& p2) noexcept
+    {
+        std::stringstream ss;
+        ss << "Party missmatch: '" << p1 << "' and '" << p2 << "'";
+        msg = ss.str();
+    }
+
     virtual const char* what() const noexcept override
     {
         return msg.c_str();
