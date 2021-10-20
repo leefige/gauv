@@ -28,7 +28,7 @@ int main()
     std::cout << p1 << std::endl;
     std::cout << p2 << std::endl;
 
-    parset ps{p0, p1, p2};
+    parset<BASE> ps{{p0, p1, p2}};
 
     auto q_0_x = poly_gen<BASE, SEC>(p0, val0);
     auto q_1_x = poly_gen<BASE, SEC>(p1, val1);

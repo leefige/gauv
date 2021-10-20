@@ -27,10 +27,10 @@ int main() {
     std::cout << p0 << std::endl;
     std::cout << p1 << std::endl;
 
-    parset ps{p0, p1};
+    parset<BASE> ps{{p0, p1}};
 
-    parset pp{p0};
-    parset ps2 = {p0};
+    parset<BASE> pp{p0};
+    parset<BASE> ps2 = {p0};
     assert(pp[0] == ps[0]);
     assert(pp[0] == ps2[0]);
 

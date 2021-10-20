@@ -16,7 +16,7 @@ class poly {
     using F = field<BASE>;
     using P = par<BASE>;
 
-    const P _party;
+    const P& _party;
     const F _secret;
     const std::array<F, DEG> _coeffs;
 

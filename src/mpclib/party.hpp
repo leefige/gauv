@@ -3,9 +3,10 @@
 #include "field.hpp"
 
 #include <vector>
+#include <functional>
+#include <initializer_list>
 #include <ostream>
 #include <sstream>
-#include <initializer_list>
 
 #include <cstdint>
 
@@ -17,6 +18,12 @@ template<base_t BASE>
 class par {
     const size_t _idx;
     const field<BASE> _alpha;
+
+    par(const par<BASE>&) = delete;
+    par(par<BASE>&&) = delete;
+    par<BASE>& operator=(const par<BASE>&) = delete;
+    par<BASE>& operator=(par<BASE>&&) = delete;
+
 public:
     explicit par(const size_t& idx, const base_t& alpha) noexcept : _idx(idx), _alpha(alpha) {}
     explicit par(const size_t& idx, const field<BASE>& alpha) noexcept : _idx(idx), _alpha(alpha) {}
@@ -49,16 +56,25 @@ public:
 
 template<base_t BASE>
 class parset {
+    using P = par<BASE>;
+    using P_wrap = std::reference_wrapper<P>;
+
     const size_t _size;
-    const std::vector<par<BASE>> _pars;
+    std::vector<P_wrap> _pars;
 
     parset<BASE>& operator=(const parset<BASE>&) = delete;
     parset<BASE>& operator=(parset&&) = delete;
 
 public:
     /* allow implicit construction */
-    parset(const std::initializer_list<par<BASE>>& args) noexcept :
-        _size(args.size()), _pars(args) {}
+    parset(const std::initializer_list<P_wrap>& args) noexcept :
+        _size(args.size())
+    {
+        _pars.reserve(_size);
+        for (const auto& p : args) {
+            _pars.push_back(p);
+        }
+    }
 
     /* allow moving construction */
     parset(parset&& right) noexcept :
@@ -74,7 +90,7 @@ public:
         }
 
         for (int i = 0; i < _size; i++) {
-            if (_pars[i] != other._pars[i]) {
+            if (_pars[i].get() != other._pars[i].get()) {
                 return true;
             }
         }
@@ -85,7 +101,7 @@ public:
     bool operator==(const parset<BASE>& other) const { return !(*this != other); }
 
     constexpr const size_t& size() const { return _size; }
-    constexpr const par<BASE>& operator[](size_t idx) const { return _pars[idx]; }
+    constexpr P& operator[](size_t idx) const { return _pars[idx]; }
 
     constexpr const auto begin() const { return _pars.begin(); }
     constexpr const auto end() const { return _pars.end(); }
