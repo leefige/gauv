@@ -22,7 +22,6 @@ class mpc_context {
 
     mpc_context(const mpc_context&) = delete;
     mpc_context(mpc_context&&) = delete;
-
     mpc_context& operator=(const mpc_context&) = delete;
     mpc_context& operator=(mpc_context&&) = delete;
 
@@ -39,8 +38,7 @@ private:
 public:
     static std::shared_ptr<mpc_context<BASE>> get_context()
     {
-        static mpc_context<BASE>* singleton_p = new mpc_context<BASE>();
-        static std::shared_ptr<mpc_context<BASE>> singleton(singleton_p);
+        static std::shared_ptr<mpc_context<BASE>> singleton(new mpc_context<BASE>());
         return singleton;
     }
 
