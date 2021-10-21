@@ -47,4 +47,13 @@ public:
     }
 };
 
+class party_nonexist: public std::exception {
+public:
+    virtual const char* what() const noexcept override
+    {
+        return "Party not exist";
+    }
+};
+
+
 } /* namespace mpc */

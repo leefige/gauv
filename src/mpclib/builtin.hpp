@@ -7,6 +7,8 @@
 
 namespace mpc {
 
+#define proto_out(x) return (x)
+
 template<base_t BASE, sec_t DEG>
 poly<BASE, DEG> poly_gen(const par<BASE>& party, const field<BASE>& secret)
 {

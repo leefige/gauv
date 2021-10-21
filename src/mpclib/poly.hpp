@@ -2,6 +2,7 @@
 
 #include "field.hpp"
 #include "party.hpp"
+#include "share.hpp"
 
 #include <array>
 
@@ -28,7 +29,7 @@ public:
     poly(const P& party, const F& secret, const std::array<F, DEG>& coeffs) noexcept :
         _party(party), _secret(secret), _coeffs(coeffs) {}
 
-    F eval(const P& party) const
+    share<BASE> eval(const P& party) const
     {
         F res = _secret;
         F factor(1);
@@ -36,7 +37,7 @@ public:
             factor *= party.alpha();
             res += factor * _coeffs[i];
         }
-        return res;
+        return share<BASE>(party, res);
     }
 
     std::string to_string() const

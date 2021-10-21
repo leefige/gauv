@@ -3,6 +3,7 @@
 #include "field.hpp"
 
 #include <vector>
+#include <memory>
 #include <functional>
 #include <initializer_list>
 
@@ -15,11 +16,17 @@ namespace mpc {
 
 using size_t = uint32_t;
 
+/* just a declaration */
+template<base_t BASE>
+class mpc_context;
+
 template<base_t BASE>
 class par {
     const size_t _idx;
     const field<BASE> _alpha;
-    const uint32_t __hash_code;
+    const uint32_t _hash_code;
+
+    std::weak_ptr<mpc_context<BASE>> _ctx;
 
     par(const par<BASE>&) = delete;
     par(par<BASE>&&) = delete;
@@ -32,8 +39,11 @@ class par {
     }
 
 public:
-    explicit par(const size_t& idx, const field<BASE>& alpha) noexcept : _idx(idx), _alpha(alpha),
-        __hash_code(__hash__(this, idx, base_t(alpha))) {}
+    explicit par(const size_t& idx, const field<BASE>& alpha) noexcept :
+        _idx(idx), _alpha(alpha),
+        _hash_code(__hash__(this, idx, base_t(alpha))),
+        _ctx()
+    {}
     explicit par(const size_t& idx, const base_t& alpha) noexcept : par(idx, field<BASE>(alpha)) {}
 
     // static par<BASE> decl_party(const size_t& idx, const base_t& alpha) noexcept { return par(idx, alpha); }
@@ -41,10 +51,11 @@ public:
 
     constexpr const field<BASE>& alpha() const { return _alpha; }
     constexpr const size_t& idx() const { return _idx; }
+    constexpr uint32_t hash() const { return _hash_code; }
 
     bool operator==(const par<BASE>& other) const
     {
-        return __hash_code == other.__hash_code && _idx == other._idx && _alpha == other._alpha;
+        return _hash_code == other._hash_code && _idx == other._idx && _alpha == other._alpha;
     }
 
     bool operator!=(const par<BASE>& other) const
@@ -57,6 +68,11 @@ public:
         std::stringstream ss;
         ss << "<party " << _idx << ": " << _alpha << ">";
         return ss.str();
+    }
+
+    void register_context(const std::shared_ptr<mpc_context<BASE>>& ctx)
+    {
+        _ctx = ctx;
     }
 
     friend std::ostream& operator<<(std::ostream& o, const par<BASE>& p)
