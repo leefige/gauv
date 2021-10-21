@@ -28,6 +28,9 @@ public:
     explicit par(const size_t& idx, const base_t& alpha) noexcept : _idx(idx), _alpha(alpha) {}
     explicit par(const size_t& idx, const field<BASE>& alpha) noexcept : _idx(idx), _alpha(alpha) {}
 
+    // static par<BASE> decl_party(const size_t& idx, const base_t& alpha) noexcept { return par(idx, alpha); }
+    // static par<BASE> decl_party(const size_t& idx, const field<BASE>& alpha) noexcept { return par(idx, alpha); }
+
     constexpr const field<BASE>& alpha() const { return _alpha; }
     constexpr const size_t& idx() const { return _idx; }
 
