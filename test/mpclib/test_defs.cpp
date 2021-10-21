@@ -22,7 +22,9 @@ int main() {
 
     par p0(0, val1);
     par p1(1, val2);
+    par p00(0, val1);
     assert(p0 != p1);
+    assert(p0 != p00);
 
     std::cout << p0 << std::endl;
     std::cout << p1 << std::endl;

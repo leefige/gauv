@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include <initializer_list>
+
 #include <ostream>
 #include <sstream>
 
@@ -18,15 +19,22 @@ template<base_t BASE>
 class par {
     const size_t _idx;
     const field<BASE> _alpha;
+    const uint32_t __hash_code;
 
     par(const par<BASE>&) = delete;
     par(par<BASE>&&) = delete;
     par<BASE>& operator=(const par<BASE>&) = delete;
     par<BASE>& operator=(par<BASE>&&) = delete;
 
+    static uint32_t __hash__(void *addr, size_t idx, base_t val)
+    {
+        return 1000003U * (1000003U * uint32_t(reinterpret_cast<unsigned long>(addr)) ^ uint32_t(idx)) ^ uint32_t(val);
+    }
+
 public:
-    explicit par(const size_t& idx, const base_t& alpha) noexcept : _idx(idx), _alpha(alpha) {}
-    explicit par(const size_t& idx, const field<BASE>& alpha) noexcept : _idx(idx), _alpha(alpha) {}
+    explicit par(const size_t& idx, const field<BASE>& alpha) noexcept : _idx(idx), _alpha(alpha),
+        __hash_code(__hash__(this, idx, base_t(alpha))) {}
+    explicit par(const size_t& idx, const base_t& alpha) noexcept : par(idx, field<BASE>(alpha)) {}
 
     // static par<BASE> decl_party(const size_t& idx, const base_t& alpha) noexcept { return par(idx, alpha); }
     // static par<BASE> decl_party(const size_t& idx, const field<BASE>& alpha) noexcept { return par(idx, alpha); }
@@ -36,7 +44,7 @@ public:
 
     bool operator==(const par<BASE>& other) const
     {
-        return _idx == other._idx && _alpha == other._alpha;
+        return __hash_code == other.__hash_code && _idx == other._idx && _alpha == other._alpha;
     }
 
     bool operator!=(const par<BASE>& other) const
@@ -60,17 +68,17 @@ public:
 template<base_t BASE>
 class parset {
     using P = par<BASE>;
-    using P_wrap = std::reference_wrapper<P>;
+    using P_ref = std::reference_wrapper<P>;
 
     const size_t _size;
-    std::vector<P_wrap> _pars;
+    std::vector<P_ref> _pars;
 
     parset<BASE>& operator=(const parset<BASE>&) = delete;
     parset<BASE>& operator=(parset&&) = delete;
 
 public:
     /* allow implicit construction */
-    parset(const std::initializer_list<P_wrap>& args) noexcept :
+    parset(const std::initializer_list<P_ref>& args) noexcept :
         _size(args.size())
     {
         _pars.reserve(_size);
