@@ -83,12 +83,12 @@ public:
         _ctx = ctx;
     }
 
-    void send(const par<BASE>& receiver, const share<BASE>& msg)
+    void send(const par<BASE>& receiver, const share<BASE>& msg) const
     {
         _ctx.lock()->send(*this, receiver, msg);
     }
 
-    share<BASE> receive()
+    share<BASE> receive() const
     {
         auto res = _ctx.lock()->receive(*this);
         if (!res) {
@@ -125,6 +125,7 @@ public:
     parset(parset&& right) noexcept :
         _size(right._size), _pars(std::move(right._pars)) {}
 
+    /* allow copy construction */
     parset(const parset<BASE>& other) noexcept :
         _size(other._size), _pars(other._pars) {}
 
