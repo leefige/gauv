@@ -1,6 +1,5 @@
 #include "../../src/mpclib/builtin.hpp"
 #include "../../src/mpclib/defs.hpp"
-#include "../../src/mpclib/context.hpp"
 
 #include <iostream>
 
@@ -40,18 +39,5 @@ int main()
     std::cout << q_2_x << std::endl;
 
     std::cout << q_0_x.eval(p0) << " " << q_0_x.eval(p1) << " " << q_0_x.eval(p2) << std::endl;
-
-
-    std::shared_ptr<mpc_context<BASE>> ctx = mpc_context<BASE>::get_context();
-    ctx->register_party(p0);
-    ctx->register_party(p1);
-
-    share<BASE> s_0_1 = q_0_x.eval(p1);
-    std::cout << s_0_1 << std::endl;
-
-    ctx->send(p0, p1, s_0_1);
-    auto rcved = ctx->receive(p1);
-    std::cout << rcved.value() << std::endl;
-
     return 0;
 }

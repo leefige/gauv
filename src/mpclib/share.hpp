@@ -23,6 +23,12 @@ public:
 
     const P& party() const { return _party; }
 
+    bool operator==(const share<BASE>& other) const
+    {
+        return _party == other._party && _val == other._val;
+    }
+    bool operator!=(const share<BASE>& other) const { return !(*this == other); };
+
     share operator+(const share<BASE>& other) const
     {
         if (_party != other._party) {

@@ -16,9 +16,10 @@ namespace mpc {
 
 using size_t = uint32_t;
 
-/* just a declaration */
-template<base_t BASE>
-class mpc_context;
+/* just declarations */
+template<base_t BASE> class share;
+template<base_t BASE> class mpc_context;
+template<base_t BASE> class empty_message_queue;
 
 template<base_t BASE>
 class par {
@@ -70,14 +71,31 @@ public:
         return ss.str();
     }
 
+    friend std::ostream& operator<<(std::ostream& o, const par<BASE>& p)
+    {
+        return o << p.to_string();
+    }
+
+    // ----------------------------------------------------
+
     void register_context(const std::shared_ptr<mpc_context<BASE>>& ctx)
     {
         _ctx = ctx;
     }
 
-    friend std::ostream& operator<<(std::ostream& o, const par<BASE>& p)
+    void send(const par<BASE>& receiver, const share<BASE>& msg)
     {
-        return o << p.to_string();
+        _ctx.lock()->send(*this, receiver, msg);
+    }
+
+    share<BASE> receive()
+    {
+        auto res = _ctx.lock()->receive(*this);
+        if (!res) {
+            throw empty_message_queue(*this);
+        }
+
+        return res.value();
     }
 };
 

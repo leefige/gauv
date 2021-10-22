@@ -55,5 +55,20 @@ public:
     }
 };
 
+template<base_t BASE>
+class empty_message_queue: public std::exception {
+    std::string msg;
+public:
+    empty_message_queue(const par<BASE>& p) noexcept
+    {
+        std::stringstream ss;
+        ss << "Message queue is empty for party" << p;
+        msg = ss.str();
+    }
+    virtual const char* what() const noexcept override
+    {
+        return msg.c_str();
+    }
+};
 
 } /* namespace mpc */
