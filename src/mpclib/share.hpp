@@ -15,11 +15,32 @@ class share {
     using P = par<BASE>;
 
     const P& _party;
-    const F _val;
+    F _val;
 
 public:
     explicit share(const P& party) noexcept : _party(party), _val(0) {}
     explicit share(const P& party, const F& value) noexcept : _party(party), _val(value) {}
+
+    share(const share<BASE>& other) noexcept : _party(other._party), _val(other._val) {}
+    share(share<BASE>&& other) noexcept : _party(std::move(other._party)), _val(std::move(other._val)) {}
+
+    share<BASE>& operator=(const share<BASE>& other)
+    {
+        if (_party != other._party) {
+            throw party_missmatch(_party, other._party);
+        }
+        _val = other._val;
+        return *this;
+    }
+
+    share<BASE>& operator=(share<BASE>&& other)
+    {
+        if (_party != other._party) {
+            throw party_missmatch(_party, other._party);
+        }
+        _val = std::move(other._val);
+        return *this;
+    }
 
     const P& party() const { return _party; }
 
