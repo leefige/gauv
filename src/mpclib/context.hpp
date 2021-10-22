@@ -18,15 +18,17 @@ class mpc_context {
     using PS_T = parset<BASE>;
     using S_T = share<BASE>;
 
+    mpc_context() noexcept = default;
+
     mpc_context(const mpc_context&) = delete;
     mpc_context(mpc_context&&) = delete;
     mpc_context& operator=(const mpc_context&) = delete;
     mpc_context& operator=(mpc_context&&) = delete;
 
-    struct party_queue {
+    struct party_queues {
         std::reference_wrapper<const P_T> party;
         std::unordered_map<uint32_t, std::deque<S_T>> queues;
-        party_queue(const P_T& p, const PS_T& ps) : party(p)
+        party_queues(const P_T& p, const PS_T& ps) : party(p)
         {
             // insert a queue for each party: private channels
             for (const P_T& pj : ps) {
@@ -35,18 +37,7 @@ class mpc_context {
         }
     };
 
-    const PS_T _parties;
-    std::unordered_map<uint32_t, party_queue> _msgs;
-
-    mpc_context(const PS_T& parties) noexcept : _parties(parties)
-    {
-        for (const P_T& p : _parties) {
-            if (_msgs.find(p.hash()) != _msgs.end()) {
-                throw party_duplicated<BASE>(*(_msgs.find(p.hash())), p);
-            }
-            register_party(p);
-        }
-    }
+    std::unordered_map<uint32_t, party_queues> _msgs;
 
 public:
     static std::shared_ptr<mpc_context<BASE>> get_context()
@@ -65,30 +56,45 @@ public:
             throw party_nonexist();
         }
 
-        _msgs.at(receiver.hash()).queue.push_back(msg);
+        auto& receiver_queues = _msgs.at(receiver.hash()).queues;
+        if (receiver_queues.find(sender.hash()) == receiver_queues.end()) {
+            throw party_nonexist();
+        }
+
+        receiver_queues.at(sender.hash()).push_back(msg);
     }
 
-    std::optional<S_T> receive(const P_T& receiver)
+    std::optional<S_T> receive(const P_T& receiver, const P_T& sender)
     {
         if (_msgs.find(receiver.hash()) == _msgs.end()) {
             throw party_nonexist();
         }
 
-        auto& dst = _msgs.at(receiver.hash()).queue;
-        if (dst.size() <= 0) {
+        auto& receiver_queues = _msgs.at(receiver.hash()).queues;
+        if (receiver_queues.find(sender.hash()) == receiver_queues.end()) {
+            throw party_nonexist();
+        }
+        auto& dst_queue = receiver_queues.at(sender.hash());
+
+        if (dst_queue.size() <= 0) {
             return std::nullopt;
         }
 
-        auto& ret = dst.front();
-        dst.pop_front();
+        auto& ret = dst_queue.front();
+        dst_queue.pop_front();
         return ret;
     }
 
-private:
-    void register_party(P_T& party)
+    void register_parties(const PS_T& parties)
     {
-        _msgs.insert(std::make_pair(party.hash(), party_queue(party, _parties)));
-        party.register_context(get_context());
+        for (P_T& p : parties) {
+            const auto& it = _msgs.find(p.hash());
+            if (it != _msgs.end()) {
+                throw party_duplicated<BASE>(it->second.party, p);
+            }
+            _msgs.insert(std::make_pair(p.hash(), party_queues(p, parties)));
+            p.register_context(get_context());
+        }
     }
 };
 

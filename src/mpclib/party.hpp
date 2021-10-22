@@ -88,9 +88,9 @@ public:
         _ctx.lock()->send(*this, receiver, msg);
     }
 
-    share<BASE> receive() const
+    share<BASE> receive(const par<BASE>& sender) const
     {
-        auto res = _ctx.lock()->receive(*this);
+        auto res = _ctx.lock()->receive(*this, sender);
         if (!res) {
             throw empty_message_queue(*this);
         }
