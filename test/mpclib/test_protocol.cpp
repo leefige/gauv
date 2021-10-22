@@ -25,15 +25,14 @@ int main() {
     par p1(1, F(5));
     par p2(2, F(17));
 
-    ctx->register_party(p0);
-    ctx->register_party(p1);
-    ctx->register_party(p2);
-
     std::cout << p0 << std::endl;
     std::cout << p1 << std::endl;
     std::cout << p2 << std::endl;
 
     parset<BASE> ps{p0, p1, p2};
+
+    ctx->register_parties(ps);
+
 
     auto q_0_x = poly_gen<BASE, SEC>(p0, val0);
     auto q_1_x = poly_gen<BASE, SEC>(p1, val1);
@@ -56,7 +55,7 @@ int main() {
         for (const par<BASE>& i : ps) {
             share<BASE> delta_i(i);
             for (const par<BASE>& j : ps) {
-                share<BASE> s_j_i = i.receive();
+                share<BASE> s_j_i = i.receive(j);
                 std::cout << i.idx() << " receive from " << j.idx() << ": " << s_j_i << std::endl;
                 delta_i = delta_i + s_j_i;
             }
