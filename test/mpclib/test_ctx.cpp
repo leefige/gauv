@@ -31,18 +31,17 @@ int main()
     auto q_0_x = poly_gen<BASE, SEC>(p0, val0);
 
     auto ctx = mpc_context<BASE>::get_context();
-    ctx->register_party(p0);
-    ctx->register_party(p1);
+    ctx->register_parties(ps);
 
     share<BASE> s_0_1 = q_0_x.eval(p1);
     std::cout << s_0_1 << std::endl;
 
     ctx->send(p0, p1, s_0_1);
-    auto rcved = ctx->receive(p1);
+    auto rcved = ctx->receive(p1, p0);
     std::cout << rcved.value() << std::endl;
 
     p0.send(p1, s_0_1);
-    auto sigma_0_1 = p1.receive();
+    auto sigma_0_1 = p1.receive(p0);
     std::cout << sigma_0_1 << std::endl;
     assert(s_0_1 == sigma_0_1);
 

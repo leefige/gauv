@@ -13,7 +13,7 @@ template<base_t BASE, sec_t DEG>
 poly<BASE, DEG> poly_gen(const par<BASE>& party, const field<BASE>& secret)
 {
     // TODO: check DEG and party.size()
-    std::array<field<BASE>, DEG> coef{field<BASE>(0)};
+    std::array<field<BASE>, DEG> coef;
     for (int i = 0; i < DEG; i++) {
         coef[i] = rand_field<BASE>();
     }
