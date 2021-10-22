@@ -13,6 +13,8 @@ template<base_t BASE>
 class field {
     base_t _val;
 public:
+    field() noexcept : _val(0) {}
+
     /* forbid implicit conversion */
     explicit field(const base_t& val) noexcept : _val(val % BASE) {}
     explicit operator base_t() const { return _val; }

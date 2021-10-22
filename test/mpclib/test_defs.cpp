@@ -9,7 +9,7 @@ using namespace mpc;
 constexpr base_t BASE = 23U;
 
 using F = field<BASE>;
-using F_other = field<23>;
+using F_other = field<107>;
 
 int main() {
     F val1(5);
