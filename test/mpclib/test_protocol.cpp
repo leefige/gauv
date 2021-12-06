@@ -9,7 +9,7 @@
 
 using namespace mpc;
 
-constexpr base_t BASE = 23U;
+constexpr base_t BASE = 31U;
 constexpr sec_t SEC = 1;
 
 using F = field<BASE>;
@@ -67,6 +67,10 @@ int main() {
     });
 
     auto res = f_rand_2t();
+
+    std::cout << res[p0] << std::endl;
+    std::cout << res[p1] << std::endl;
+    std::cout << res[p2] << std::endl;
 
     return 0;
 }
