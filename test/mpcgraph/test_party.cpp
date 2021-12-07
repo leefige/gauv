@@ -18,6 +18,10 @@ void test1()
     auto x = ctx.declare_secret("x", p1);
     auto y = ctx.declare_secret("y", p2);
 
+    auto c = ctx.declare_constant("c");
+    auto cx = ctx.declare_constant("x");
+    auto cc = ctx.declare_constant();
+
     {
         auto sp1 = p1.lock();
         assert(sp1);
@@ -34,6 +38,17 @@ void test1()
         assert(yp);
 
         cout << *xp << " " << *yp << endl;
+    }
+
+    {
+        auto cp = c.lock();
+        assert(cp);
+        auto cxp = cx.lock();
+        assert(cxp);
+        auto ccp = cc.lock();
+        assert(ccp);
+
+        cout << *cp << " " << *cxp << " " << *ccp << endl;
     }
 }
 

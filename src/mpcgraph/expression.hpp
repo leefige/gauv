@@ -37,7 +37,7 @@ class Placeholder : public Expression {
 protected:
     std::string __name;
 
-    Placeholder(const std::string& name) : __name(name) {}
+    explicit Placeholder(const std::string& name) : __name(name) {}
 
 public:
     virtual ~Placeholder() {}
@@ -48,20 +48,20 @@ public:
 class Constant : public Placeholder {
     friend Context;
 
-    Constant(const Constant&) = delete;
-    Constant(Constant&&) = delete;
-    Constant& operator=(const Constant&) = delete;
-    Constant& operator=(Constant&&) = delete;
-
 protected:
     /**
      * @brief Construct a placeholder for a constant.
      *
      * @param name Name of the constant.
      */
-    Constant(const std::string& name) : Placeholder(name) {}
+    explicit Constant(const std::string& name) : Placeholder(name) {}
 
 public:
+    Constant(const Constant&) = delete;
+    Constant(Constant&&) = delete;
+    Constant& operator=(const Constant&) = delete;
+    Constant& operator=(Constant&&) = delete;
+
     virtual ~Constant() {}
 
     virtual std::string to_string() const override
@@ -77,11 +77,6 @@ class Secret : public Placeholder {
     friend Context;
 
     std::string _party_name;
-
-    Secret(const Secret&) = delete;
-    Secret(Secret&&) = delete;
-    Secret& operator=(const Secret&) = delete;
-    Secret& operator=(Secret&&) = delete;
 
 protected:
     std::weak_ptr<PartyDecl> __party;
@@ -106,6 +101,11 @@ protected:
     }
 
 public:
+    Secret(const Secret&) = delete;
+    Secret(Secret&&) = delete;
+    Secret& operator=(const Secret&) = delete;
+    Secret& operator=(Secret&&) = delete;
+
     virtual ~Secret() {}
 
     virtual std::string to_string() const override

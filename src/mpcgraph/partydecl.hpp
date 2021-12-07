@@ -13,14 +13,14 @@ class PartyDecl {
 
     std::string _name;
 
-    PartyDecl(const std::string& name) : _name(name) {}
+    explicit PartyDecl(const std::string& name) : _name(name) {}
 
+public:
     PartyDecl(const PartyDecl&) = delete;
     PartyDecl(PartyDecl&&) = delete;
     PartyDecl& operator=(const PartyDecl&) = delete;
     PartyDecl& operator=(PartyDecl&&) = delete;
 
-public:
     std::string name() { return _name; }
 
     std::string to_string() const

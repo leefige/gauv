@@ -15,6 +15,7 @@ class Context {
 
     std::unordered_map<std::string, std::shared_ptr<PartyDecl>> _parties;
     std::unordered_map<std::string, std::shared_ptr<Secret>> _secrets;
+    std::unordered_map<std::string, std::shared_ptr<Constant>> _constants;
 
 public:
     /**
@@ -50,7 +51,7 @@ public:
      * @param party Weak ptr of the party owning this secret.
      * @return Weak ptr of the declared secret.
      *
-     * @exception var_redefinition Trying to declared a secret with a name \
+     * @exception var_redefinition Trying to declared a secret with a name
      * that has already been declared.
      */
     std::weak_ptr<Secret> declare_secret(const std::string& name,
@@ -63,6 +64,41 @@ public:
         std::shared_ptr<Secret> p(new Secret(name, party));
         _secrets.insert(std::make_pair(name, p));
         return p;
+    }
+
+    /**
+     * @brief Declare a named constant.
+     *
+     * @param name Name of the constant.
+     * @return Weak ptr of the declared constant.
+     *
+     * @exception var_redefinition Trying to declared a constant with a name
+     * that has already been declared.
+     */
+    std::weak_ptr<Constant> declare_constant(const std::string& name)
+    {
+        if (_constants.find(name) != _constants.end()) {
+            throw var_redefinition(name);
+        }
+
+        std::shared_ptr<Constant> p(new Constant(name));
+        _constants.insert(std::make_pair(name, p));
+        return p;
+    }
+
+    /**
+     * @brief Declare an anonymous constant.
+     *
+     * @return Weak ptr of the declared constant.
+     *
+     * @exception var_redefinition Trying to declared a constant with a name
+     * that has already been declared.
+     */
+    std::weak_ptr<Constant> declare_constant()
+    {
+        std::stringstream ss;
+        ss << "const_" << _constants.size();
+        return declare_constant(ss.str());
     }
 
 };
