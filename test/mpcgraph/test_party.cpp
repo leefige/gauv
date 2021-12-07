@@ -1,5 +1,6 @@
-#include "../../src/mpcgraph/partydecl.hpp"
 #include "../../src/mpcgraph/context.hpp"
+#include "../../src/mpcgraph/partydecl.hpp"
+#include "../../src/mpcgraph/expression.hpp"
 
 #include <iostream>
 
@@ -10,17 +11,16 @@ using namespace std;
 
 void test1()
 {
-    Context ctx("ctx");
+    Context ctx = Context::get_context();
     // PartyDecl party1("p1");
-    auto p1 = ctx.party("p1");
-    auto p2 = ctx.party("p2");
+    auto p1 = PartyDecl::new_party(ctx, "p1");
+    auto p2 = PartyDecl::new_party(ctx, "p2");
 
-    auto x = ctx.declare_secret("x", p1);
-    auto y = ctx.declare_secret("y", p2);
+    auto x = Secret::new_secret(ctx, "x", p1);
+    auto y = Secret::new_secret(ctx, "y", p2);
 
-    auto c = ctx.declare_constant("c");
-    auto cx = ctx.declare_constant("x");
-    auto cc = ctx.declare_constant();
+    auto c = Constant::new_constant(ctx, "c");
+    auto cx = Constant::new_constant(ctx, "x");
 
     {
         auto sp1 = p1.lock();
@@ -45,50 +45,14 @@ void test1()
         assert(cp);
         auto cxp = cx.lock();
         assert(cxp);
-        auto ccp = cc.lock();
-        assert(ccp);
 
-        cout << *cp << " " << *cxp << " " << *ccp << endl;
-    }
-}
-
-void test_delete()
-{
-    auto ctx = new Context();
-    // PartyDecl party1("p1");
-    auto p1 = ctx->party("p1");
-    auto p2 = ctx->party("p2");
-
-    auto x = ctx->declare_secret("x", p1);
-    auto y = ctx->declare_secret("y", p2);
-
-    {
-        auto sp1 = p1.lock();
-        assert(sp1);
-        auto sp2 = p2.lock();
-        assert(sp2);
+        cout << *cp << " " << *cxp << endl;
     }
 
-    delete ctx;
-    {
-        auto sp1 = p1.lock();
-        assert(!sp1);
-        auto sp2 = p2.lock();
-        assert(!sp2);
-
-        try {
-            auto bad = ctx->declare_secret("bad", p1);
-        } catch(const runtime_error& e)
-        {
-            cerr << e.what() << endl;
-            cout << "Exception caught" << endl;
-        }
-    }
 }
 
 int main()
 {
     test1();
-    test_delete();
     return 0;
 }
