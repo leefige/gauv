@@ -14,11 +14,17 @@ class Context {
     std::string _name;
 
     std::unordered_map<std::string, std::shared_ptr<PartyDecl>> _parties;
-    std::unordered_map<std::string, std::shared_ptr<Placeholder>> _secrets;
-    std::unordered_map<std::string, std::shared_ptr<Var>> _vars;
+    std::unordered_map<std::string, std::shared_ptr<Secret>> _secrets;
 
 public:
-    Context(const std::string& name) : _name(name) {}
+    /**
+     * @brief Construct a new Context object.
+     *
+     * @param name Name of this context.
+     */
+    explicit Context(const std::string& name) : _name(name) {}
+
+    Context() : Context("context") {}
 
     /**
      * @brief Return a weak ptr copy of a named party; create if not exist.
@@ -47,14 +53,14 @@ public:
      * @exception var_redefinition Trying to declared a secret with a name \
      * that has already been declared.
      */
-    std::weak_ptr<Placeholder> declare_secret(const std::string& name,
+    std::weak_ptr<Secret> declare_secret(const std::string& name,
             const std::weak_ptr<PartyDecl>& party)
     {
         if (_secrets.find(name) != _secrets.end()) {
             throw var_redefinition(name);
         }
 
-        std::shared_ptr<Placeholder> p(new Placeholder(name, party));
+        std::shared_ptr<Secret> p(new Secret(name, party));
         _secrets.insert(std::make_pair(name, p));
         return p;
     }

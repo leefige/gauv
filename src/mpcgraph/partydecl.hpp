@@ -26,7 +26,7 @@ public:
     std::string to_string() const
     {
         std::stringstream ss;
-        ss << "<party '" << _name << "'>";
+        ss << "<party " << _name << ">";
         return ss.str();
     }
 
