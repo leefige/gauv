@@ -1,15 +1,18 @@
 #pragma once
 
-#include "excpts.hpp"
-
 #include <functional>
+#include <sstream>
 #include <unordered_map>
+
 
 namespace mpc {
 
 class PartyDecl;
+
 class Secret;
 class Constant;
+
+class Poly;
 
 class Context {
     std::string _name;
@@ -17,6 +20,7 @@ class Context {
     std::unordered_map<std::string, std::reference_wrapper<PartyDecl>> _parties;
     std::unordered_map<std::string, std::reference_wrapper<Secret>> _secrets;
     std::unordered_map<std::string, std::reference_wrapper<Constant>> _constants;
+    std::unordered_map<std::string, std::reference_wrapper<Poly>> _polies;
 
     /**
      * @brief Construct a new Context object.
@@ -36,6 +40,15 @@ class Context {
         }
         map.insert(std::make_pair(name, std::ref(object)));
         return true;
+    }
+
+    template <typename T>
+    bool _register_to_context(T& object,
+            std::unordered_map<std::string, std::reference_wrapper<T>>& map)
+    {
+        std::stringstream ss;
+        ss << "t_" << map.size();
+        return _register_to_context(ss.str(), object, map);
     }
 
 public:
@@ -116,6 +129,13 @@ public:
      * @exception std::out_of_range If no constant with `name` is present.
      */
     Constant& constant(const std::string& name) { return _constants.at(name); }
+
+
+    bool register_poly(Poly& poly)
+    {
+        return _register_to_context(poly, _polies);
+    }
+
 };
 
 } /* namespace mpc */

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "context.hpp"
+#include "excpts.hpp"
 
 #include <string>
 #include <sstream>
@@ -12,7 +13,7 @@ class Context;
 
 class PartyDecl {
     Context& _ctx;
-    std::string _name;
+    const std::string _name;
 
     PartyDecl(const PartyDecl&) = delete;
     PartyDecl(PartyDecl&&) = delete;
