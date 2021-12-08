@@ -19,20 +19,34 @@ class PartyDecl {
     PartyDecl& operator=(const PartyDecl&) = delete;
     PartyDecl& operator=(PartyDecl&&) = delete;
 
-    explicit PartyDecl(Context& context, const std::string& name) noexcept :
-        _ctx(context), _name(name) {}
-
 public:
-    static std::weak_ptr<PartyDecl> new_party(Context& context,
-            const std::string& name)
+    /**
+     * @brief Construct a new PartyDecl object.
+     *
+     * @param context Reference to the context of this object.
+     * @param name Name of this party.
+     *
+     * @exception party_redefinition The name of this party has been
+     * rigistered in this context (threw by Context::register_party).
+     */
+    explicit PartyDecl(Context& context, const std::string& name)
+            : _ctx(context), _name(name)
     {
-        std::shared_ptr<PartyDecl> p(new PartyDecl(context, name));
-        context.register_party(name, p);
-        return p;
+        context.register_party(name, *this);
     }
 
+    /**
+     * @brief Get the name.
+     *
+     * @return std::string Name of this party.
+     */
     std::string name() { return _name; }
 
+    /**
+     * @brief Get the context.
+     *
+     * @return Context& Context of this party.
+     */
     Context& context() { return _ctx; }
 
     std::string to_string() const

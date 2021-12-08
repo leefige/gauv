@@ -2,6 +2,7 @@
 
 #include "excpts.hpp"
 
+#include <functional>
 #include <memory>
 #include <unordered_map>
 
@@ -14,7 +15,7 @@ class Constant;
 class Context {
     std::string _name;
 
-    std::unordered_map<std::string, std::shared_ptr<PartyDecl>> _parties;
+    std::unordered_map<std::string, std::reference_wrapper<PartyDecl>> _parties;
     std::unordered_map<std::string, std::shared_ptr<Secret>> _secrets;
     std::unordered_map<std::string, std::shared_ptr<Constant>> _constants;
 
@@ -23,9 +24,9 @@ class Context {
      *
      * @param name Name of this context.
      */
-    explicit Context(const std::string& name) : _name(name) {}
+    explicit Context(const std::string& name) noexcept : _name(name) {}
 
-    Context() : Context("context") {}
+    explicit Context() noexcept : Context("context") {}
 
 public:
     static Context& get_context()
@@ -38,36 +39,31 @@ public:
      * @brief Register a named party.
      *
      * @param name Name of the party.
-     * @param party Shared ptr of the party.
+     * @param party Reference to the party.
      * @return Void.
      *
-     * @exception std::runtime_error `party` is null ptr.
      * @exception party_redefinition The name of this party has been
      * rigistered in this context.
      */
     void register_party(const std::string& name,
-            const std::shared_ptr<PartyDecl>& party)
+            PartyDecl& party)
     {
-        if (!party) {
-            throw std::runtime_error("Null PartyDecl pointer");
-        }
-
         if (_parties.find(name) != _parties.end()) {
             throw party_redefinition(name);
         }
-
-        _parties.insert(std::make_pair(name, party));
+        _parties.insert(std::make_pair(name, std::ref(party)));
     }
 
-    std::optional<std::weak_ptr<PartyDecl>> party(const std::string& name)
-    {
-        auto it = _parties.find(name);
-        if (it == _parties.end()) {
-            return std::nullopt;
-        } else {
-            return std::weak_ptr<PartyDecl>(it->second);
-        }
-    }
+    /**
+     * @brief Get the reference to a named party that has been registered
+     * to this context.
+     *
+     * @param name Name of the party.
+     * @return PartyDecl& Reference to the named party.
+     *
+     * @exception std::out_of_range If no party with `name` is present.
+     */
+    PartyDecl& party(const std::string& name) { return _parties.at(name); }
 
     /**
      * @brief Register a secret input for some party.
