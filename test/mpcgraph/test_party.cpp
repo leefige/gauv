@@ -49,6 +49,26 @@ void test1()
         cout << *cp << " " << *cxp << endl;
     }
 
+    {
+        auto sp1 = ctx.party("p1").value().lock();
+        assert(sp1);
+        auto sp2 = ctx.party("p2").value().lock();
+        assert(sp2);
+        cout << *sp1 << " " << *sp2 << endl;
+    }
+
+    {
+        auto xp = ctx.secret("x").value().lock();
+        assert(xp);
+        auto yp = ctx.secret("y").value().lock();
+        assert(yp);
+
+        auto bad = ctx.secret("bad");
+        assert(!bad.has_value());
+
+        cout << *xp << " " << *yp << endl;
+    }
+
 }
 
 int main()
