@@ -1,106 +1,121 @@
 #pragma once
 
-#include "partydecl.hpp"
-#include "expression.hpp"
-
 #include "excpts.hpp"
 
-#include <memory>
+#include <functional>
 #include <unordered_map>
 
 namespace mpc {
 
+class PartyDecl;
+class Secret;
+class Constant;
+
 class Context {
     std::string _name;
 
-    std::unordered_map<std::string, std::shared_ptr<PartyDecl>> _parties;
-    std::unordered_map<std::string, std::shared_ptr<Secret>> _secrets;
-    std::unordered_map<std::string, std::shared_ptr<Constant>> _constants;
+    std::unordered_map<std::string, std::reference_wrapper<PartyDecl>> _parties;
+    std::unordered_map<std::string, std::reference_wrapper<Secret>> _secrets;
+    std::unordered_map<std::string, std::reference_wrapper<Constant>> _constants;
 
-public:
     /**
      * @brief Construct a new Context object.
      *
      * @param name Name of this context.
      */
-    explicit Context(const std::string& name) : _name(name) {}
+    explicit Context(const std::string& name) noexcept : _name(name) {}
 
-    Context() : Context("context") {}
+    explicit Context() noexcept : Context("context") {}
+
+    template <typename T>
+    bool _register_to_context(const std::string& name, T& object,
+            std::unordered_map<std::string, std::reference_wrapper<T>>& map)
+    {
+        if (map.find(name) != map.end()) {
+            return false;
+        }
+        map.insert(std::make_pair(name, std::ref(object)));
+        return true;
+    }
+
+public:
+    static Context& get_context()
+    {
+        static Context ctx;
+        return ctx;
+    }
 
     /**
-     * @brief Return a weak ptr copy of a named party; create if not exist.
+     * @brief Register a named party.
      *
      * @param name Name of the party.
-     * @return Weak ptr of the party.
+     * @param party Reference to the party.
+     * @return bool True if seccess, false if the name of this party has been
+     * rigistered in this context.
      */
-    std::weak_ptr<PartyDecl> party(const std::string& name)
+    bool register_party(const std::string& name, PartyDecl& party)
     {
-        if (_parties.find(name) != _parties.end()) {
-            return _parties[name];
-        }
-
-        std::shared_ptr<PartyDecl> p(new PartyDecl(name));
-        _parties.insert(std::make_pair(name, p));
-        return p;
+        return _register_to_context(name, party, _parties);
     }
 
     /**
-     * @brief Declare a secret input for some party.
+     * @brief Get the reference to a named party that has been registered
+     * to this context.
      *
-     * @param name Name of the secret variable.
-     * @param party Weak ptr of the party owning this secret.
-     * @return Weak ptr of the declared secret.
+     * @param name Name of the party.
+     * @return PartyDecl& Reference to the named party.
      *
-     * @exception var_redefinition Trying to declared a secret with a name
-     * that has already been declared.
+     * @exception std::out_of_range If no party with `name` is present.
      */
-    std::weak_ptr<Secret> declare_secret(const std::string& name,
-            const std::weak_ptr<PartyDecl>& party)
-    {
-        if (_secrets.find(name) != _secrets.end()) {
-            throw var_redefinition(name);
-        }
+    PartyDecl& party(const std::string& name) { return _parties.at(name); }
 
-        std::shared_ptr<Secret> p(new Secret(name, party));
-        _secrets.insert(std::make_pair(name, p));
-        return p;
+    /**
+     * @brief Register a secret input for some party.
+     *
+     * @param name Name of the secret.
+     * @param secret Reference to the secret variable to be registered.
+     * @return bool True if seccess, false if the name of this secret has been
+     * rigistered in this context.
+     */
+    bool register_secret(const std::string& name, Secret& secret)
+    {
+        return _register_to_context(name, secret, _secrets);
     }
+
+    /**
+     * @brief Get the reference to a secret that has been registered
+     * to this context.
+     *
+     * @param name Name of the secret.
+     * @return Secret& Reference to the secret.
+     *
+     * @exception std::out_of_range If no secret with `name` is present.
+     */
+    Secret& secret(const std::string& name) { return _secrets.at(name); }
 
     /**
      * @brief Declare a named constant.
      *
      * @param name Name of the constant.
-     * @return Weak ptr of the declared constant.
-     *
-     * @exception var_redefinition Trying to declared a constant with a name
-     * that has already been declared.
+     * @param var Reference to the constant to be registered.
+     * @return bool True if seccess, false if the name of this constant has been
+     * rigistered in this context.
      */
-    std::weak_ptr<Constant> declare_constant(const std::string& name)
+    bool register_constant(const std::string& name, Constant& var)
     {
-        if (_constants.find(name) != _constants.end()) {
-            throw var_redefinition(name);
-        }
-
-        std::shared_ptr<Constant> p(new Constant(name));
-        _constants.insert(std::make_pair(name, p));
-        return p;
+        return _register_to_context(name, var, _constants);
     }
 
     /**
-     * @brief Declare an anonymous constant.
+     * @brief Get the reference to a named constant that has been registered
+     * to this context.
      *
-     * @return Weak ptr of the declared constant.
+     * @param name Name of the constant.
+     * @return Constant& Reference to the named constant.
      *
-     * @exception var_redefinition Trying to declared a constant with a name
-     * that has already been declared.
+     * @exception std::out_of_range If no constant with `name` is present.
      */
-    std::weak_ptr<Constant> declare_constant()
-    {
-        std::stringstream ss;
-        ss << "const_" << _constants.size();
-        return declare_constant(ss.str());
-    }
-
+    Constant& constant(const std::string& name) { return _constants.at(name); }
 };
 
 } /* namespace mpc */

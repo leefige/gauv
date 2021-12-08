@@ -1,6 +1,7 @@
 #pragma once
 
 #include "partydecl.hpp"
+#include "context.hpp"
 
 #include <vector>
 #include <memory>
@@ -8,14 +9,17 @@
 namespace mpc {
 
 class Expression {
-    // std::vector<std::weak_ptr<Expression>> oprands;
+    Context& _ctx;
+
 protected:
-    Expression() {}
+    explicit Expression(Context& context) noexcept : _ctx(context) {}
 
 public:
     virtual ~Expression() {}
 
     virtual std::string to_string() const = 0;
+
+    Context& context() { return _ctx; }
 
     friend std::ostream& operator<<(std::ostream& o, const Expression& p)
     {
@@ -24,10 +28,8 @@ public:
 };
 
 class Literal : public Expression {
-    friend Context;
-
 protected:
-    Literal() {}
+    explicit Literal(Context& context) noexcept : Expression(context) {}
 
 public:
     virtual ~Literal() {}
@@ -37,30 +39,37 @@ class Placeholder : public Expression {
 protected:
     std::string __name;
 
-    explicit Placeholder(const std::string& name) : __name(name) {}
+    explicit Placeholder(Context& context, const std::string& name) noexcept :
+        Expression(context), __name(name) {}
 
 public:
     virtual ~Placeholder() {}
 
-    std::string name() { return __name; }
+    std::string name() const { return __name; }
 };
 
 class Constant : public Placeholder {
-    friend Context;
-
-protected:
-    /**
-     * @brief Construct a placeholder for a constant.
-     *
-     * @param name Name of the constant.
-     */
-    explicit Constant(const std::string& name) : Placeholder(name) {}
-
-public:
     Constant(const Constant&) = delete;
     Constant(Constant&&) = delete;
     Constant& operator=(const Constant&) = delete;
     Constant& operator=(Constant&&) = delete;
+
+public:
+    /**
+     * @brief Construct a placeholder for a constant.
+     *
+     * @param name Name of the constant.
+     *
+     * @exception var_redefinition The name of this constant has been
+     * rigistered in this context.
+     */
+    explicit Constant(Context& context, const std::string& name)
+            : Placeholder(context, name)
+    {
+        if (!context.register_constant(name, *this)) {
+            throw var_redefinition(name);
+        }
+    }
 
     virtual ~Constant() {}
 
@@ -74,44 +83,45 @@ public:
 
 
 class Secret : public Placeholder {
-    friend Context;
-
-    std::string _party_name;
-
-protected:
-    std::weak_ptr<PartyDecl> __party;
-
-    /**
-     * @brief Construct a new secret of some party.
-     *
-     * @param name Name of the secret.
-     * @param party Weak ptr to the party.
-     *
-     * @exception std::runtime_error `party` is released.
-     */
-    Secret(const std::string& name,
-        const std::weak_ptr<PartyDecl>& party) :
-            Placeholder(name), __party(party)
-    {
-        auto pp = party.lock();
-        if (!pp) {
-            throw std::runtime_error("PartyDecl released");
-        }
-        _party_name = pp->name();
-    }
-
-public:
     Secret(const Secret&) = delete;
     Secret(Secret&&) = delete;
     Secret& operator=(const Secret&) = delete;
     Secret& operator=(Secret&&) = delete;
 
+    const PartyDecl& _party;
+
+public:
+    /**
+     * @brief Construct a new secret of some party.
+     *
+     * @param name Name of the secret.
+     * @param party Const reference to the party.
+     *
+     * @exception var_redefinition The name of this secret has been
+     * rigistered in this context.
+     */
+    explicit Secret(Context& context, const std::string& name,
+            const PartyDecl& party)
+            : Placeholder(context, name), _party(party)
+    {
+        if (!context.register_secret(name, *this)) {
+            throw var_redefinition(name);
+        }
+    }
+
     virtual ~Secret() {}
+
+    /**
+     * @brief Get the party of this secret.
+     *
+     * @return const PartyDecl& Const reference to the party.
+     */
+    const PartyDecl& party() const { return _party; }
 
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<secret[" << _party_name << "] " << __name << ">";
+        ss << "<secret[" << _party.name() << "] " << __name << ">";
         return ss.str();
     }
 };
