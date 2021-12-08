@@ -27,12 +27,14 @@ public:
      * @param name Name of this party.
      *
      * @exception party_redefinition The name of this party has been
-     * rigistered in this context (threw by Context::register_party).
+     * rigistered in this context.
      */
     explicit PartyDecl(Context& context, const std::string& name)
             : _ctx(context), _name(name)
     {
-        context.register_party(name, *this);
+        if (!context.register_party(name, *this)) {
+            throw party_redefinition(name);
+        }
     }
 
     /**
@@ -40,7 +42,7 @@ public:
      *
      * @return std::string Name of this party.
      */
-    std::string name() { return _name; }
+    std::string name() const { return _name; }
 
     /**
      * @brief Get the context.

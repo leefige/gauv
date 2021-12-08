@@ -12,7 +12,7 @@ class Expression {
     Context& _ctx;
 
 protected:
-    Expression(Context& context) noexcept : _ctx(context) {}
+    explicit Expression(Context& context) noexcept : _ctx(context) {}
 
 public:
     virtual ~Expression() {}
@@ -29,7 +29,7 @@ public:
 
 class Literal : public Expression {
 protected:
-    Literal(Context& context) noexcept : Expression(context) {}
+    explicit Literal(Context& context) noexcept : Expression(context) {}
 
 public:
     virtual ~Literal() {}
@@ -45,7 +45,7 @@ protected:
 public:
     virtual ~Placeholder() {}
 
-    std::string name() { return __name; }
+    std::string name() const { return __name; }
 };
 
 class Constant : public Placeholder {
@@ -54,22 +54,21 @@ class Constant : public Placeholder {
     Constant& operator=(const Constant&) = delete;
     Constant& operator=(Constant&&) = delete;
 
-protected:
+public:
     /**
      * @brief Construct a placeholder for a constant.
      *
      * @param name Name of the constant.
+     *
+     * @exception var_redefinition The name of this constant has been
+     * rigistered in this context.
      */
-    explicit Constant(Context& context, const std::string& name) noexcept :
-        Placeholder(context, name) {}
-
-public:
-    static std::weak_ptr<Constant> new_constant(Context& context,
-            const std::string& name)
+    explicit Constant(Context& context, const std::string& name)
+            : Placeholder(context, name)
     {
-        std::shared_ptr<Constant> p(new Constant(context, name));
-        context.register_constant(name, p);
-        return p;
+        if (!context.register_constant(name, *this)) {
+            throw var_redefinition(name);
+        }
     }
 
     virtual ~Constant() {}
@@ -84,50 +83,45 @@ public:
 
 
 class Secret : public Placeholder {
-    std::string _party_name;
-
     Secret(const Secret&) = delete;
     Secret(Secret&&) = delete;
     Secret& operator=(const Secret&) = delete;
     Secret& operator=(Secret&&) = delete;
 
-protected:
-    std::weak_ptr<PartyDecl> __party;
+    const PartyDecl& _party;
 
+public:
     /**
      * @brief Construct a new secret of some party.
      *
      * @param name Name of the secret.
-     * @param party Weak ptr to the party.
+     * @param party Const reference to the party.
      *
-     * @exception std::runtime_error `party` is released.
+     * @exception var_redefinition The name of this secret has been
+     * rigistered in this context.
      */
-    Secret(Context& context, const std::string& name,
-        const std::weak_ptr<PartyDecl>& party) :
-            Placeholder(context, name), __party(party)
+    explicit Secret(Context& context, const std::string& name,
+            const PartyDecl& party)
+            : Placeholder(context, name), _party(party)
     {
-        auto pp = party.lock();
-        if (!pp) {
-            throw std::runtime_error("PartyDecl released");
+        if (!context.register_secret(name, *this)) {
+            throw var_redefinition(name);
         }
-        _party_name = pp->name();
-    }
-
-public:
-    static std::weak_ptr<Secret> new_secret(Context& context,
-            const std::string& name, const std::weak_ptr<PartyDecl>& party)
-    {
-        std::shared_ptr<Secret> p(new Secret(context, name, party));
-        context.register_secret(name, p);
-        return p;
     }
 
     virtual ~Secret() {}
 
+    /**
+     * @brief Get the party of this secret.
+     *
+     * @return const PartyDecl& Const reference to the party.
+     */
+    const PartyDecl& party() const { return _party; }
+
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<secret[" << _party_name << "] " << __name << ">";
+        ss << "<secret[" << _party.name() << "] " << __name << ">";
         return ss.str();
     }
 };

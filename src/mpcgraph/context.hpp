@@ -3,7 +3,6 @@
 #include "excpts.hpp"
 
 #include <functional>
-#include <memory>
 #include <unordered_map>
 
 namespace mpc {
@@ -16,8 +15,8 @@ class Context {
     std::string _name;
 
     std::unordered_map<std::string, std::reference_wrapper<PartyDecl>> _parties;
-    std::unordered_map<std::string, std::shared_ptr<Secret>> _secrets;
-    std::unordered_map<std::string, std::shared_ptr<Constant>> _constants;
+    std::unordered_map<std::string, std::reference_wrapper<Secret>> _secrets;
+    std::unordered_map<std::string, std::reference_wrapper<Constant>> _constants;
 
     /**
      * @brief Construct a new Context object.
@@ -27,6 +26,17 @@ class Context {
     explicit Context(const std::string& name) noexcept : _name(name) {}
 
     explicit Context() noexcept : Context("context") {}
+
+    template <typename T>
+    bool _register_to_context(const std::string& name, T& object,
+            std::unordered_map<std::string, std::reference_wrapper<T>>& map)
+    {
+        if (map.find(name) != map.end()) {
+            return false;
+        }
+        map.insert(std::make_pair(name, std::ref(object)));
+        return true;
+    }
 
 public:
     static Context& get_context()
@@ -40,18 +50,12 @@ public:
      *
      * @param name Name of the party.
      * @param party Reference to the party.
-     * @return Void.
-     *
-     * @exception party_redefinition The name of this party has been
+     * @return bool True if seccess, false if the name of this party has been
      * rigistered in this context.
      */
-    void register_party(const std::string& name,
-            PartyDecl& party)
+    bool register_party(const std::string& name, PartyDecl& party)
     {
-        if (_parties.find(name) != _parties.end()) {
-            throw party_redefinition(name);
-        }
-        _parties.insert(std::make_pair(name, std::ref(party)));
+        return _register_to_context(name, party, _parties);
     }
 
     /**
@@ -69,71 +73,49 @@ public:
      * @brief Register a secret input for some party.
      *
      * @param name Name of the secret.
-     * @param secret Shared ptr of the secret variable to be registered.
-     * @return Void.
-     *
-     * @exception std::runtime_error `secret` is null ptr.
-     * @exception var_redefinition Trying to declared a secret with a name
-     * that has already been declared.
+     * @param secret Reference to the secret variable to be registered.
+     * @return bool True if seccess, false if the name of this secret has been
+     * rigistered in this context.
      */
-    void register_secret(const std::string& name,
-            const std::shared_ptr<Secret>& secret)
+    bool register_secret(const std::string& name, Secret& secret)
     {
-        if (!secret) {
-            throw std::runtime_error("Null Secret pointer");
-        }
-
-        if (_secrets.find(name) != _secrets.end()) {
-            throw var_redefinition(name);
-        }
-
-        _secrets.insert(std::make_pair(name, secret));
+        return _register_to_context(name, secret, _secrets);
     }
 
-    std::optional<std::weak_ptr<Secret>> secret(const std::string& name)
-    {
-        auto it = _secrets.find(name);
-        if (it == _secrets.end()) {
-            return std::nullopt;
-        } else {
-            return std::weak_ptr<Secret>(it->second);
-        }
-    }
+    /**
+     * @brief Get the reference to a secret that has been registered
+     * to this context.
+     *
+     * @param name Name of the secret.
+     * @return Secret& Reference to the secret.
+     *
+     * @exception std::out_of_range If no secret with `name` is present.
+     */
+    Secret& secret(const std::string& name) { return _secrets.at(name); }
 
     /**
      * @brief Declare a named constant.
      *
      * @param name Name of the constant.
-     * @param var Shared ptr of the constant to be registered.
-     * @return Void.
-     *
-     * @exception std::runtime_error `var` is null ptr.
-     * @exception var_redefinition Trying to declared a constant with a name
-     * that has already been declared.
+     * @param var Reference to the constant to be registered.
+     * @return bool True if seccess, false if the name of this constant has been
+     * rigistered in this context.
      */
-    void register_constant(const std::string& name,
-            std::shared_ptr<Constant> var)
+    bool register_constant(const std::string& name, Constant& var)
     {
-        if (!var) {
-            throw std::runtime_error("Null Constant pointer");
-        }
-
-        if (_constants.find(name) != _constants.end()) {
-            throw var_redefinition(name);
-        }
-
-        _constants.insert(std::make_pair(name, var));
+        return _register_to_context(name, var, _constants);
     }
 
-    std::optional<std::weak_ptr<Constant>> constant(const std::string& name)
-    {
-        auto it = _constants.find(name);
-        if (it == _constants.end()) {
-            return std::nullopt;
-        } else {
-            return std::weak_ptr<Constant>(it->second);
-        }
-    }
+    /**
+     * @brief Get the reference to a named constant that has been registered
+     * to this context.
+     *
+     * @param name Name of the constant.
+     * @return Constant& Reference to the named constant.
+     *
+     * @exception std::out_of_range If no constant with `name` is present.
+     */
+    Constant& constant(const std::string& name) { return _constants.at(name); }
 };
 
 } /* namespace mpc */
