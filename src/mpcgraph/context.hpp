@@ -11,6 +11,7 @@ class PartyDecl;
 
 class Secret;
 class Constant;
+class Share;
 
 class Poly;
 
@@ -21,6 +22,7 @@ class Context {
     std::unordered_map<std::string, std::reference_wrapper<Secret>> _secrets;
     std::unordered_map<std::string, std::reference_wrapper<Constant>> _constants;
     std::unordered_map<std::string, std::reference_wrapper<Poly>> _polies;
+    std::unordered_map<std::string, std::reference_wrapper<Share>> _shares;
 
     /**
      * @brief Construct a new Context object.
@@ -130,10 +132,14 @@ public:
      */
     Constant& constant(const std::string& name) { return _constants.at(name); }
 
-
     bool register_poly(Poly& poly)
     {
         return _register_to_context(poly, _polies);
+    }
+
+    bool register_share(Share& share)
+    {
+        return _register_to_context(share, _shares);
     }
 
 };

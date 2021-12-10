@@ -1,7 +1,8 @@
 #pragma once
 
-#include "partydecl.hpp"
 #include "context.hpp"
+#include "operator.hpp"
+#include "partydecl.hpp"
 
 #include <vector>
 #include <memory>
@@ -10,9 +11,17 @@ namespace mpc {
 
 class Expression {
     Context& _ctx;
+    const Equation _eqn;
+    std::string _name;
 
 protected:
-    explicit Expression(Context& context) noexcept : _ctx(context) {}
+
+    explicit Expression(Context& context, const std::string& name,
+        const Equation& eqn) noexcept
+        : _ctx(context), _eqn(eqn) {}
+
+    explicit Expression(Context& context, const std::string& name) noexcept
+        : Expression(context, name, Equation::nulleqn) {}
 
 public:
     virtual ~Expression() {}
@@ -20,6 +29,10 @@ public:
     virtual std::string to_string() const = 0;
 
     Context& context() { return _ctx; }
+
+    std::string name() const { return _name; }
+
+    const Equation& equation() const { return _eqn; }
 
     friend std::ostream& operator<<(std::ostream& o, const Expression& p)
     {
@@ -29,7 +42,8 @@ public:
 
 class Literal : public Expression {
 protected:
-    explicit Literal(Context& context) noexcept : Expression(context) {}
+    explicit Literal(Context& context, const std::string& name) noexcept
+        : Expression(context, name) {}
 
 public:
     virtual ~Literal() {}
@@ -37,15 +51,13 @@ public:
 
 class Placeholder : public Expression {
 protected:
-    std::string __name;
 
-    explicit Placeholder(Context& context, const std::string& name) noexcept :
-        Expression(context), __name(name) {}
+    explicit Placeholder(Context& context, const std::string& name) noexcept
+        : Expression(context, name) {}
 
 public:
     virtual ~Placeholder() {}
 
-    std::string name() const { return __name; }
 };
 
 class Constant : public Placeholder {
@@ -76,7 +88,7 @@ public:
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<const " << __name << ">";
+        ss << "<const " << name() << ">";
         return ss.str();
     }
 };
@@ -121,7 +133,7 @@ public:
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<secret[" << _party.name() << "] " << __name << ">";
+        ss << "<secret[" << _party.name() << "] " << name() << ">";
         return ss.str();
     }
 };

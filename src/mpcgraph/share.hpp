@@ -3,8 +3,9 @@
 #pragma once
 
 #include "expression.hpp"
-#include "partydecl.hpp"
+#include "excpts.hpp"
 #include "context.hpp"
+#include "partydecl.hpp"
 
 #include <vector>
 #include <memory>
@@ -20,18 +21,25 @@ class Share : public Expression {
     const PartyDecl& _party;
 
 protected:
-    explicit Share(Context& context) noexcept : Expression(context) {}
+    explicit Share(Context& context,
+            const std::string& name,
+            const Equation& eqn,
+            const PartyDecl& party)
+        : Expression(context, name, eqn), _party(party)
+    {
+        if (!context.register_share(*this)) {
+            throw var_redefinition(name);
+        }
+    }
 
 public:
-    virtual ~Expression() {}
+    virtual ~Share() {}
 
-    virtual std::string to_string() const = 0;
-
-    Context& context() { return _ctx; }
-
-    friend std::ostream& operator<<(std::ostream& o, const Expression& p)
+    virtual std::string to_string() const override
     {
-        return o << p.to_string();
+        std::stringstream ss;
+        ss << "<share[" << _party.name() << "] " << name() << ">";
+        return ss.str();
     }
 };
 
