@@ -1,7 +1,5 @@
 #pragma once
 
-#include <initializer_list>
-#include <vector>
 #include <ostream>
 
 namespace mpc {
@@ -98,42 +96,5 @@ std::stringstream& operator<<(std::stringstream& o, const Operator& op)
     }
     return o;
 }
-
-class Equation {
-    const Operator _op;
-    std::vector<Expression*> _oprands;
-
-    // Equation(const Equation&) = delete;
-    // Equation(Equation&&) = delete;
-    // Equation& operator=(const Equation&) = delete;
-    // Equation& operator=(Equation&&) = delete;
-
-public:
-    static const Equation nulleqn;
-
-    // TODO: ensure oprands in the same context
-    explicit Equation(const Operator& op,
-        const std::initializer_list<Expression*>& oprands) noexcept
-        : _op(op), _oprands(oprands) {}
-
-    explicit operator bool() const noexcept { return this != &nulleqn; }
-
-    const Operator& op() const { return _op; }
-    std::vector<Expression*>& oprands() { return _oprands; }
-};
-
-class NullEquation : private Equation {
-    explicit NullEquation() noexcept : Equation(Operator::NONE, {}) {}
-public:
-    static NullEquation& self() noexcept
-    {
-        static NullEquation _nulleqn;
-        return _nulleqn;
-    }
-};
-
-const Equation Equation::nulleqn(Operator::NONE, {});
-
-NullEquation& nulleqn = NullEquation::self();
 
 } /* namespace mpc */

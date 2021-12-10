@@ -4,21 +4,48 @@
 #include "operator.hpp"
 #include "partydecl.hpp"
 
+#include <initializer_list>
 #include <vector>
 #include <memory>
 
 namespace mpc {
 
+class Equation {
+    const Operator _op;
+    std::vector<Expression*> _oprands;
+
+    // Equation(const Equation&) = delete;
+    // Equation(Equation&&) = delete;
+    // Equation& operator=(const Equation&) = delete;
+    // Equation& operator=(Equation&&) = delete;
+
+public:
+    static const Equation nulleqn;
+
+    // TODO: ensure oprands in the same context
+    explicit Equation(const Operator& op,
+        const std::initializer_list<Expression*>& oprands) noexcept
+        : _op(op), _oprands(oprands) {}
+
+    explicit operator bool() const noexcept { return this != &nulleqn; }
+
+    const Operator& op() const { return _op; }
+    std::vector<Expression*>& oprands() { return _oprands; }
+    const std::vector<Expression*>& coprands() const { return _oprands; }
+};
+
+const Equation Equation::nulleqn(Operator::NONE, {});
+
 class Expression {
     Context& _ctx;
-    const Equation _eqn;
     std::string _name;
+    const Equation _eqn;
 
 protected:
 
     explicit Expression(Context& context, const std::string& name,
         const Equation& eqn) noexcept
-        : _ctx(context), _eqn(eqn) {}
+        : _ctx(context), _name(name), _eqn(eqn) {}
 
     explicit Expression(Context& context, const std::string& name) noexcept
         : Expression(context, name, Equation::nulleqn) {}

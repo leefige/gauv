@@ -20,7 +20,8 @@ class Share : public Expression {
 
     const PartyDecl& _party;
 
-protected:
+// protected:
+public:
     explicit Share(Context& context,
             const std::string& name,
             const Equation& eqn,
@@ -32,13 +33,23 @@ protected:
         }
     }
 
-public:
     virtual ~Share() {}
 
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<share[" << _party.name() << "] " << name() << ">";
+        ss << "<share[" << _party.name() << "] "
+            << name() << "=" << equation().op() << "(";
+
+        for (auto cit = equation().coprands().cbegin();
+                cit != equation().coprands().cend(); cit++) {
+            if (cit != equation().coprands().cbegin()) {
+                ss << ",";
+            }
+            ss << (*cit)->to_string();
+        }
+
+        ss << ")" << ">";
         return ss.str();
     }
 };
