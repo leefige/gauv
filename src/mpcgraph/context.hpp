@@ -44,14 +44,14 @@ class Context {
         return true;
     }
 
-    template <typename T>
-    bool _register_to_context(T& object,
-            std::unordered_map<std::string, std::reference_wrapper<T>>& map)
-    {
-        std::stringstream ss;
-        ss << "t_" << map.size();
-        return _register_to_context(ss.str(), object, map);
-    }
+    // template <typename T>
+    // bool _register_to_context(T& object,
+    //         std::unordered_map<std::string, std::reference_wrapper<T>>& map)
+    // {
+    //     std::stringstream ss;
+    //     ss << "t_" << map.size();
+    //     return _register_to_context(ss.str(), object, map);
+    // }
 
 public:
     static Context& get_context()
@@ -132,15 +132,18 @@ public:
      */
     Constant& constant(const std::string& name) { return _constants.at(name); }
 
-    bool register_poly(Poly& poly)
+    bool register_poly(const std::string& name, Poly& poly)
     {
-        return _register_to_context(poly, _polies);
+        return _register_to_context(name, poly, _polies);
     }
 
-    bool register_share(Share& share)
+    bool register_share(const std::string& name, Share& share)
     {
-        return _register_to_context(share, _shares);
+        return _register_to_context(name, share, _shares);
     }
+
+    size_t n_poly() const { return _polies.size(); }
+    size_t n_share() const { return _shares.size(); }
 
 };
 

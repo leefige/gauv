@@ -70,7 +70,7 @@ public:
 class Literal : public Expression {
 protected:
     explicit Literal(Context& context, const std::string& name) noexcept
-        : Expression(context, name) {}
+        : Expression(context, name, Equation(Operator::INPUT, {})) {}
 
 public:
     virtual ~Literal() {}
@@ -80,7 +80,7 @@ class Placeholder : public Expression {
 protected:
 
     explicit Placeholder(Context& context, const std::string& name) noexcept
-        : Expression(context, name) {}
+        : Expression(context, name, Equation(Operator::INPUT, {})) {}
 
 public:
     virtual ~Placeholder() {}
@@ -110,6 +110,8 @@ public:
         }
     }
 
+    static const Constant zero;
+
     virtual ~Constant() {}
 
     virtual std::string to_string() const override
@@ -120,6 +122,7 @@ public:
     }
 };
 
+const Constant Constant::zero(Context::get_context(), "_const_zero");
 
 class Secret : public Placeholder {
     Secret(const Secret&) = delete;

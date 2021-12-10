@@ -12,7 +12,11 @@
 
 namespace mpc {
 
+class Poly;
+
 class Share : public Expression {
+    friend Poly;
+
     Share(const Share&) = delete;
     Share(Share&&) = delete;
     Share& operator=(const Share&) = delete;
@@ -20,19 +24,16 @@ class Share : public Expression {
 
     const PartyDecl& _party;
 
-// protected:
-public:
     explicit Share(Context& context,
             const std::string& name,
             const Equation& eqn,
-            const PartyDecl& party)
+            const PartyDecl& party) noexcept
         : Expression(context, name, eqn), _party(party)
     {
-        if (!context.register_share(*this)) {
-            throw var_redefinition(name);
-        }
+        (void) context.register_share(name, *this);
     }
 
+public:
     virtual ~Share() {}
 
     virtual std::string to_string() const override

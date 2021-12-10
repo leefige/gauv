@@ -19,6 +19,7 @@ enum class Operator {
 
     EVAL,
     RECONSTRUCT,
+    POLILIZE,
 };
 
 std::ostream& operator<<(std::ostream& o, const Operator& op)
@@ -50,6 +51,9 @@ std::ostream& operator<<(std::ostream& o, const Operator& op)
         break;
     case Operator::RECONSTRUCT:
         o << "RECONSTRUCT";
+        break;
+    case Operator::POLILIZE:
+        o << "POLILIZE";
         break;
 
     default:
@@ -88,6 +92,9 @@ std::stringstream& operator<<(std::stringstream& o, const Operator& op)
         break;
     case Operator::RECONSTRUCT:
         o << "RECONSTRUCT";
+        break;
+    case Operator::POLILIZE:
+        o << "POLILIZE";
         break;
 
     default:
