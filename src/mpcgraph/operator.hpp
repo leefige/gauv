@@ -116,7 +116,7 @@ public:
         const std::initializer_list<Expression*>& oprands) noexcept
         : _op(op), _oprands(oprands) {}
 
-    explicit operator bool() const noexcept { return this == &nulleqn; }
+    explicit operator bool() const noexcept { return this != &nulleqn; }
 
     const Operator& op() const { return _op; }
     std::vector<Expression*>& oprands() { return _oprands; }
