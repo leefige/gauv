@@ -10,7 +10,7 @@ using namespace std;
 
 void test_party()
 {
-    Context ctx = Context::get_context();
+    Context& ctx = Context::get_context();
 
     PartyDecl p1(ctx, "p1");
     PartyDecl p2(ctx, "p2");

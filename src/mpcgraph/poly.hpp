@@ -39,6 +39,19 @@ public:
 
     const Placeholder& const_term() const { return _C; }
 
+    Share eval(const PartyDecl& party)
+    {
+        size_t num = context().n_share();
+        std::stringstream ss;
+        ss << "share_" << num;
+        return Share(
+            context(),
+            ss.str(),
+            Equation(Operator::EVAL, {this}),
+            party
+        );
+    }
+
     virtual std::string to_string() const override
     {
         std::stringstream ss;

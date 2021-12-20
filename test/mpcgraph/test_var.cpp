@@ -11,7 +11,7 @@ using namespace std;
 
 void test_secret()
 {
-    Context ctx = Context::get_context();
+    Context& ctx = Context::get_context();
 
     PartyDecl p1(ctx, "p1");
     PartyDecl p2(ctx, "p2");
@@ -40,7 +40,7 @@ void test_secret()
 
 void test_constant()
 {
-    Context ctx = Context::get_context();
+    Context& ctx = Context::get_context();
 
     Constant x(ctx, "x");
     Constant y(ctx, "y");

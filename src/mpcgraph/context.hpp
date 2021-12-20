@@ -53,6 +53,11 @@ class Context {
     //     return _register_to_context(ss.str(), object, map);
     // }
 
+    Context(const Context&) = delete;
+    Context(Context&&) = delete;
+    Context& operator=(const Context&) = delete;
+    Context& operator=(Context&&) = delete;
+
 public:
     static Context& get_context()
     {

@@ -10,7 +10,25 @@
 #include <vector>
 #include <memory>
 
+#include <iostream>
+
 namespace mpc {
+
+class party_mismatch : public std::exception {
+    std::string msg;
+public:
+    party_mismatch(const PartyDecl& want, const PartyDecl& get) noexcept
+    {
+        std::stringstream ss;
+        ss << "Wants Party '" << want << "', gets party '" << get << "'";
+        msg = ss.str();
+    }
+
+    virtual const char* what() const noexcept override
+    {
+        return msg.c_str();
+    }
+};
 
 class Poly;
 
@@ -33,8 +51,28 @@ class Share : public Expression {
         (void) context.register_share(name, *this);
     }
 
+    friend Share _binary_op(Share& a, Share& b, Operator op)
+    {
+        if (a._party != b._party) {
+            throw party_mismatch(a._party, b._party);
+        }
+
+        auto& ctx = Context::get_context();
+        size_t num = ctx.n_share();
+        std::stringstream ss;
+        ss << "share_" << num;
+        return Share(
+            ctx,
+            ss.str(),
+            Equation(op, {&a, &b}),
+            a._party
+        );
+    }
+
 public:
     virtual ~Share() {}
+
+    const PartyDecl& party() const { return _party; }
 
     virtual std::string to_string() const override
     {
@@ -52,6 +90,26 @@ public:
 
         ss << ")" << ">";
         return ss.str();
+    }
+
+    friend Share operator+(Share& a, Share& b)
+    {
+        return _binary_op(a, b, Operator::ADD);
+    }
+
+    friend Share operator-(Share& a, Share& b)
+    {
+        return _binary_op(a, b, Operator::SUB);
+    }
+
+    friend Share operator*(Share& a, Share& b)
+    {
+        return _binary_op(a, b, Operator::MUL);
+    }
+
+    friend Share operator/(Share& a, Share& b)
+    {
+        return _binary_op(a, b, Operator::DIV);
     }
 };
 

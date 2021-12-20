@@ -63,6 +63,17 @@ public:
     {
         return o << p.to_string();
     }
+
+    friend bool operator==(const PartyDecl& a, const PartyDecl& b)
+    {
+        return &a == &b;
+    }
+
+    friend bool operator!=(const PartyDecl& a, const PartyDecl& b)
+    {
+        return !(a == b);
+    }
+
 };
 
 } /* namespace mpc */
