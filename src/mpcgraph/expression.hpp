@@ -110,7 +110,7 @@ public:
         }
     }
 
-    static const Constant zero;
+    static Constant zero;
 
     virtual ~Constant() {}
 
@@ -122,7 +122,7 @@ public:
     }
 };
 
-const Constant Constant::zero(Context::get_context(), "_const_zero");
+Constant Constant::zero(Context::get_context(), "_const_zero");
 
 class Secret : public Placeholder {
     Secret(const Secret&) = delete;
