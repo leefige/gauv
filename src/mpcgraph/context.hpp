@@ -4,6 +4,7 @@
 #include <sstream>
 #include <unordered_map>
 
+#include <iostream>
 
 namespace mpc {
 
@@ -22,7 +23,7 @@ class Context {
     std::unordered_map<std::string, std::reference_wrapper<Secret>> _secrets;
     std::unordered_map<std::string, std::reference_wrapper<Constant>> _constants;
     std::unordered_map<std::string, std::reference_wrapper<Poly>> _polies;
-    std::unordered_map<std::string, std::reference_wrapper<Share>> _shares;
+    std::unordered_map<std::string, Share*> _shares;
 
     /**
      * @brief Construct a new Context object.
@@ -59,6 +60,16 @@ class Context {
     Context& operator=(Context&&) = delete;
 
 public:
+    ~Context()
+    {
+        while (!_shares.empty()) {
+            auto it = _shares.begin();
+            delete it->second;
+            _shares.erase(it);
+            std::cout << "_shares.size: " << _shares.size() << std::endl;
+        }
+    }
+
     static Context& get_context()
     {
         static Context ctx;
@@ -142,9 +153,13 @@ public:
         return _register_to_context(name, poly, _polies);
     }
 
-    bool register_share(const std::string& name, Share& share)
+    bool register_share(const std::string& name, Share* share)
     {
-        return _register_to_context(name, share, _shares);
+        if (_shares.find(name) != _shares.end()) {
+            return false;
+        }
+        _shares.insert(std::make_pair(name, share));
+        return true;
     }
 
     size_t n_poly() const { return _polies.size(); }

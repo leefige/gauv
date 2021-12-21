@@ -24,20 +24,20 @@ void test_share()
     Poly poly1 = Poly::gen_poly(ctx, x, 2);
     Poly poly2 = Poly::gen_poly(ctx, Constant::zero, 2);
 
-    auto s1 = poly1.eval(p1);
-    auto s2 = poly1.eval(p2);
+    auto& s1 = poly1.eval(p1);
+    auto& s2 = poly1.eval(p2);
     cout << s1 << endl << s2 << endl;
 
-    auto t1 = poly2.eval(p1);
-    auto t2 = poly2.eval(p2);
+    auto& t1 = poly2.eval(p1);
+    auto& t2 = poly2.eval(p2);
     cout << t1 << endl << t2 << endl;
 
-    auto a1 = s1 + t1;
-    auto a2 = s1 - t1;
-    auto a3 = s1 * t1;
-    auto a4 = s1 / t1;
-    auto a5 = a1 * a2;
-    auto a6 = a5 + a3;
+    auto& a1 = s1 + t1;
+    auto& a2 = s1 - t1;
+    auto& a3 = s1 * t1;
+    auto& a4 = s1 / t1;
+    auto& a5 = a1 * a2;
+    auto& a6 = a5 + a3;
     cout << a1 << endl
         << a2 << endl
         << a3 << endl
@@ -46,14 +46,27 @@ void test_share()
         << a6 << endl;
 
     try {
-        auto bad = a6 + t2;
+        auto& bad = a6 + t2;
     } catch (const std::exception& e) {
         cerr << e.what() << endl;
         cout << "Exception caught" << endl;
     }
 
+    cout << endl;
 
+    auto& b1 = s2 + t2;
+    auto& b2 = a6.transfer(p2);
+    auto& b3 = b2 / b1;
+    cout << b1 << endl
+        << b2 << endl
+        << b3 << endl;
 
+    try {
+        auto& bad = a1.transfer(p1);
+    } catch(const std::exception& e) {
+        cerr << e.what() << endl;
+        cout << "Exception caught" << endl;
+    }
 }
 
 int main()
