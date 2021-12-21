@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <sstream>
 #include <unordered_map>
 
@@ -23,7 +24,7 @@ class Context {
     std::unordered_map<std::string, std::reference_wrapper<Secret>> _secrets;
     std::unordered_map<std::string, std::reference_wrapper<Constant>> _constants;
     std::unordered_map<std::string, std::reference_wrapper<Poly>> _polies;
-    std::unordered_map<std::string, Share*> _shares;
+    std::unordered_map<std::string, std::shared_ptr<Share>> _shares;
 
     /**
      * @brief Construct a new Context object.
@@ -60,15 +61,7 @@ class Context {
     Context& operator=(Context&&) = delete;
 
 public:
-    ~Context()
-    {
-        while (!_shares.empty()) {
-            auto it = _shares.begin();
-            delete it->second;
-            _shares.erase(it);
-            std::cout << "_shares.size: " << _shares.size() << std::endl;
-        }
-    }
+    ~Context() {}
 
     static Context& get_context()
     {
