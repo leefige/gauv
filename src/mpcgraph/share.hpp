@@ -90,7 +90,7 @@ class Share : public Expression {
 public:
     virtual ~Share()
     {
-        std::cout << "Share " << name() << " released" << std::endl;
+        // std::cout << "~Share " << name() << " released" << std::endl;
     }
 
     const PartyDecl& party() const { return _party; }

@@ -40,7 +40,7 @@ class Poly : public Expression {
 public:
     ~Poly()
     {
-        std::cout << "Poly " << name() << " released" << std::endl;
+        // std::cout << "~Poly " << name() << " released" << std::endl;
     }
 
     static Poly& gen_poly(Context& context, PartyDecl& party,
