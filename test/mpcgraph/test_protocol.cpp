@@ -1,8 +1,4 @@
-#include "../../src/mpcgraph/context.hpp"
-#include "../../src/mpcgraph/partydecl.hpp"
-#include "../../src/mpcgraph/expression.hpp"
-#include "../../src/mpcgraph/poly.hpp"
-#include "../../src/mpcgraph/share.hpp"
+#include "../../src/mpcgraph/builtin.hpp"
 
 #include <iostream>
 
@@ -28,7 +24,7 @@ void test_rand_2t()
     std::vector<Share*> transfers;
 
     for (const auto& i : parties) {
-        auto q_i_x = Poly::gen_poly(ctx, Constant::zero, SEC);
+        auto& q_i_x = Poly::gen_poly(ctx, *i, Constant::zero, SEC);
         for (const auto& j : parties) {
             auto& s_i_j = q_i_x.eval(*j);
             transfers.push_back(&s_i_j);
@@ -37,12 +33,7 @@ void test_rand_2t()
     }
 
     for (const auto& i : parties) {
-        auto q_i_x = Poly::gen_poly(ctx, Constant::zero, SEC);
-        for (const auto& j : parties) {
-            auto& s_i_j = q_i_x.eval(*j);
-            transfers.push_back(&s_i_j);
-            cout << i->name() << " sends to " << j->name() << ": " << s_i_j.name() << endl;
-        }
+
     }
 }
 

@@ -23,7 +23,8 @@ class Context {
     std::unordered_map<std::string, std::reference_wrapper<PartyDecl>> _parties;
     std::unordered_map<std::string, std::reference_wrapper<Secret>> _secrets;
     std::unordered_map<std::string, std::reference_wrapper<Constant>> _constants;
-    std::unordered_map<std::string, std::reference_wrapper<Poly>> _polies;
+
+    std::unordered_map<std::string, std::shared_ptr<Poly>> _polies;
     std::unordered_map<std::string, std::shared_ptr<Share>> _shares;
 
     /**
@@ -36,7 +37,7 @@ class Context {
     explicit Context() noexcept : Context("context") {}
 
     template <typename T>
-    bool _register_to_context(const std::string& name, T& object,
+    bool _register_ref_to_context(const std::string& name, T& object,
             std::unordered_map<std::string, std::reference_wrapper<T>>& map)
     {
         if (map.find(name) != map.end()) {
@@ -46,14 +47,16 @@ class Context {
         return true;
     }
 
-    // template <typename T>
-    // bool _register_to_context(T& object,
-    //         std::unordered_map<std::string, std::reference_wrapper<T>>& map)
-    // {
-    //     std::stringstream ss;
-    //     ss << "t_" << map.size();
-    //     return _register_to_context(ss.str(), object, map);
-    // }
+    template <typename T>
+    bool _register_ptr_to_context(const std::string& name, T* object,
+            std::unordered_map<std::string, std::shared_ptr<T>>& map)
+    {
+        if (map.find(name) != map.end()) {
+            return false;
+        }
+        map.insert(std::make_pair(name, object));
+        return true;
+    }
 
     Context(const Context&) = delete;
     Context(Context&&) = delete;
@@ -79,7 +82,7 @@ public:
      */
     bool register_party(const std::string& name, PartyDecl& party)
     {
-        return _register_to_context(name, party, _parties);
+        return _register_ref_to_context(name, party, _parties);
     }
 
     /**
@@ -103,7 +106,7 @@ public:
      */
     bool register_secret(const std::string& name, Secret& secret)
     {
-        return _register_to_context(name, secret, _secrets);
+        return _register_ref_to_context(name, secret, _secrets);
     }
 
     /**
@@ -127,7 +130,7 @@ public:
      */
     bool register_constant(const std::string& name, Constant& var)
     {
-        return _register_to_context(name, var, _constants);
+        return _register_ref_to_context(name, var, _constants);
     }
 
     /**
@@ -141,18 +144,14 @@ public:
      */
     Constant& constant(const std::string& name) { return _constants.at(name); }
 
-    bool register_poly(const std::string& name, Poly& poly)
+    bool register_poly(const std::string& name, Poly* poly)
     {
-        return _register_to_context(name, poly, _polies);
+        return _register_ptr_to_context(name, poly, _polies);
     }
 
     bool register_share(const std::string& name, Share* share)
     {
-        if (_shares.find(name) != _shares.end()) {
-            return false;
-        }
-        _shares.insert(std::make_pair(name, share));
-        return true;
+        return _register_ptr_to_context(name, share, _shares);;
     }
 
     size_t n_poly() const { return _polies.size(); }

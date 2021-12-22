@@ -1,5 +1,4 @@
-#include "../../src/mpcgraph/context.hpp"
-#include "../../src/mpcgraph/partydecl.hpp"
+#include "../../src/mpcgraph/builtin.hpp"
 
 #include <iostream>
 

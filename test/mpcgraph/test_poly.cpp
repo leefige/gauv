@@ -1,7 +1,4 @@
-#include "../../src/mpcgraph/context.hpp"
-#include "../../src/mpcgraph/partydecl.hpp"
-#include "../../src/mpcgraph/expression.hpp"
-#include "../../src/mpcgraph/poly.hpp"
+#include "../../src/mpcgraph/builtin.hpp"
 
 #include <iostream>
 
@@ -20,8 +17,8 @@ void test_poly()
     Secret x(ctx, "x", p1);
     Secret y(ctx, "y", p2);
 
-    Poly poly1 = Poly::gen_poly(ctx, x, 2);
-    Poly poly2 = Poly::gen_poly(ctx, Constant::zero, 2);
+    Poly& poly1 = Poly::gen_poly(ctx, p1, x, 2);
+    Poly& poly2 = Poly::gen_poly(ctx, p2, Constant::zero, 2);
     cout << poly1 << endl << poly2 << endl;
 }
 

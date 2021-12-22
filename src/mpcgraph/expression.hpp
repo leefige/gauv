@@ -20,6 +20,8 @@ class Equation {
     // Equation& operator=(Equation&&) = delete;
 
 public:
+    std::vector<void*> params;
+
     static const Equation nulleqn;
 
     // TODO: ensure oprands in the same context
@@ -39,7 +41,7 @@ const Equation Equation::nulleqn(Operator::NONE, {});
 class Expression {
     Context& _ctx;
     std::string _name;
-    const Equation _eqn;
+    Equation _eqn;
 
 protected:
 
@@ -59,7 +61,8 @@ public:
 
     std::string name() const { return _name; }
 
-    const Equation& equation() const { return _eqn; }
+    Equation& equation() { return _eqn; }
+    const Equation& cequation() const { return _eqn; }
 
     friend std::ostream& operator<<(std::ostream& o, const Expression& p)
     {

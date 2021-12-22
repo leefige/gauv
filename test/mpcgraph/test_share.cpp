@@ -1,8 +1,4 @@
-#include "../../src/mpcgraph/context.hpp"
-#include "../../src/mpcgraph/partydecl.hpp"
-#include "../../src/mpcgraph/expression.hpp"
-#include "../../src/mpcgraph/poly.hpp"
-#include "../../src/mpcgraph/share.hpp"
+#include "../../src/mpcgraph/builtin.hpp"
 
 #include <iostream>
 
@@ -21,8 +17,8 @@ void test_share()
     Secret x(ctx, "x", p1);
     Secret y(ctx, "y", p2);
 
-    Poly poly1 = Poly::gen_poly(ctx, x, 2);
-    Poly poly2 = Poly::gen_poly(ctx, Constant::zero, 2);
+    Poly& poly1 = Poly::gen_poly(ctx, p1, x, 2);
+    Poly& poly2 = Poly::gen_poly(ctx, p2, Constant::zero, 2);
 
     auto& s1 = poly1.eval(p1);
     auto& s2 = poly1.eval(p2);
@@ -32,13 +28,15 @@ void test_share()
     auto& t2 = poly2.eval(p2);
     cout << t1 << endl << t2 << endl;
 
-    auto& a1 = s1 + t1;
-    auto& a2 = s1 - t1;
-    auto& a3 = s1 * t1;
-    auto& a4 = s1 / t1;
+    auto& t1s = t1.transfer(p1);
+    auto& a1 = s1 + t1s;
+    auto& a2 = s1 - t1s;
+    auto& a3 = s1 * t1s;
+    auto& a4 = s1 / t1s;
     auto& a5 = a1 * a2;
     auto& a6 = a5 + a3;
-    cout << a1 << endl
+    cout << t1s << endl
+        << a1 << endl
         << a2 << endl
         << a3 << endl
         << a4 << endl
@@ -46,7 +44,7 @@ void test_share()
         << a6 << endl;
 
     try {
-        auto& bad = a6 + t2;
+        a6 + t2;
     } catch (const std::exception& e) {
         cerr << e.what() << endl;
         cout << "Exception caught" << endl;
@@ -54,15 +52,18 @@ void test_share()
 
     cout << endl;
 
-    auto& b1 = s2 + t2;
+    auto& s2t = s2.transfer(p2);
+
+    auto& b1 = s2t + t2;
     auto& b2 = a6.transfer(p2);
     auto& b3 = b2 / b1;
-    cout << b1 << endl
+    cout << s2t << endl
+        << b1 << endl
         << b2 << endl
         << b3 << endl;
 
     try {
-        auto& bad = a1.transfer(p1);
+        a1.transfer(p1);
     } catch(const std::exception& e) {
         cerr << e.what() << endl;
         cout << "Exception caught" << endl;

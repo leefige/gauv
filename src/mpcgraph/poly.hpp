@@ -5,11 +5,14 @@
 #include "expression.hpp"
 #include "share.hpp"
 
+#include <iostream>
+
 namespace mpc
 {
 
 class Poly : public Expression {
     const size_t _degree;
+    const PartyDecl& _party;
     const Placeholder& _C;
 
     Poly(const Poly&) = delete;
@@ -17,29 +20,44 @@ class Poly : public Expression {
     Poly& operator=(const Poly&) = delete;
     Poly& operator=(Poly&&) = delete;
 
-    explicit Poly(Context& context, const std::string& name,
-            Placeholder& C, size_t degree)
+    explicit Poly(Context& context,
+            const std::string& name,
+            const PartyDecl& party,
+            Placeholder& C,
+            size_t degree)
         : Expression(context, name, Equation(Operator::POLILIZE, {&C})),
-            _degree(degree), _C(C)
+            _degree(degree), _party(party), _C(C)
     {
-        (void) context.register_poly(name, *this);
+        if(Secret* s = dynamic_cast<Secret*>(&C)) {
+            // is instance of secret
+            if (s->party() != party) {
+                throw party_mismatch(party, s->party());
+            }
+        }
+        (void) context.register_poly(name, this);
     }
 
 public:
-    static Poly gen_poly(Context& context,
+    ~Poly()
+    {
+        std::cout << "Poly " << name() << " released" << std::endl;
+    }
+
+    static Poly& gen_poly(Context& context, PartyDecl& party,
             Placeholder& C, size_t degree)
     {
         size_t num = context.n_poly();
         std::stringstream ss;
         ss << "poly_" << num;
-        return Poly(context, ss.str(), C, degree);
+        auto ret = new Poly(context, ss.str(), party, C, degree);
+        return *ret;
     }
 
     size_t degree() const { return _degree; }
 
     const Placeholder& const_term() const { return _C; }
 
-    Share& eval(const PartyDecl& party)
+    Share& eval(PartyDecl& party)
     {
         size_t num = context().n_share();
         std::stringstream ss;
@@ -49,15 +67,16 @@ public:
             context(),
             ss.str(),
             Equation(Operator::EVAL, {this}),
-            party
+            _party
         );
+        ret->equation().params.push_back(reinterpret_cast<void*>(&party));
         return *ret;
     }
 
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<poly{" << _degree << "}[" << _C.name() << "] " << name() << ">";
+        ss << "<poly{" << _degree << "}[" << _party.name() << "][" << _C.name() << "] " << name() << ">";
         return ss.str();
     }
 

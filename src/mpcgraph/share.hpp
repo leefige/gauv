@@ -99,11 +99,11 @@ public:
     {
         std::stringstream ss;
         ss << "<share[" << _party.name() << "] "
-            << name() << "=" << equation().op() << "(";
+            << name() << "=" << cequation().op() << "(";
 
-        for (auto cit = equation().coprands().cbegin();
-                cit != equation().coprands().cend(); cit++) {
-            if (cit != equation().coprands().cbegin()) {
+        for (auto cit = cequation().coprands().cbegin();
+                cit != cequation().coprands().cend(); cit++) {
+            if (cit != cequation().coprands().cbegin()) {
                 ss << ",";
             }
             ss << (*cit)->to_string();
