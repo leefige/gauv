@@ -136,7 +136,7 @@ public:
     Share& transfer(const PartyDecl& party)
     {
         if (_party == party) {
-            throw party_duplicated(party);
+            return *this;
         }
 
         auto& ctx = Context::get_context();

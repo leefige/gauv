@@ -21,19 +21,30 @@ void test_rand_2t()
 
     std::vector<PartyDecl*> parties{&p0, &p1, &p2};
 
-    std::vector<Share*> transfers;
+    std::vector<std::vector<Share*>> transfers;
+    transfers.resize(parties.size());
 
-    for (const auto& i : parties) {
-        auto& q_i_x = Poly::gen_poly(ctx, *i, Constant::zero, SEC);
-        for (const auto& j : parties) {
-            auto& s_i_j = q_i_x.eval(*j);
-            transfers.push_back(&s_i_j);
-            cout << i->name() << " sends to " << j->name() << ": " << s_i_j.name() << endl;
+    for (int i = 0; i < parties.size(); i++) {
+        auto& q_i_x = Poly::gen_poly(ctx, *parties[i], Constant::zero, SEC);
+        for (int j = 0; j < parties.size(); j++) {
+            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(*parties[j]);
+            transfers[j].push_back(&s_i_j);
+            cout << parties[i]->name() << " sends to " << parties[j]->name() << ": " << s_i_j << endl;
         }
     }
 
-    for (const auto& i : parties) {
+    cout << endl;
 
+    for (int i = 0; i < parties.size(); i++) {
+        auto recv_queue = transfers[i];
+        Share* delta_i = recv_queue.back();
+        recv_queue.pop_back();
+        while (recv_queue.size() > 0) {
+            auto& partial_sum = *delta_i + *(recv_queue.back());
+            recv_queue.pop_back();
+            delta_i = &partial_sum;
+        }
+        cout << parties[i]->name() << " yield delta: " << *delta_i << endl;
     }
 }
 
