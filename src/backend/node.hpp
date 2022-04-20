@@ -21,10 +21,7 @@ public:
 
     ~Node() {}
 
-    void clear() {
-        predecessors.clear();
-        successors.clear();
-    }
+    void clear();
 
     void setPredecessors(NodeVec pre) { predecessors = pre; }
     void setSuccessors(NodeVec suc) { successors = suc; }
@@ -40,7 +37,7 @@ public:
     int getInDegrees() { return predecessors.size(); }
     int getOutDegrees() { return successors.size(); }
 
-    bool isOWNED() { return type == OWNED; }
+    bool isOwned() { return type == OWNED; }
     bool isRandom() { return type == RANDOM; }
 
 private:
