@@ -1,7 +1,7 @@
 #pragma once
 
 #include "context.hpp"
-#include "excpts.hpp"
+#include "excepts.hpp"
 
 #include <string>
 #include <sstream>

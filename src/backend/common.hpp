@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <cassert>
 #include <algorithm>
 
 namespace mpc {

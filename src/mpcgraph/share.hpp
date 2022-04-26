@@ -1,9 +1,7 @@
 #pragma once
 
-#pragma once
-
 #include "expression.hpp"
-#include "excpts.hpp"
+#include "excepts.hpp"
 #include "context.hpp"
 #include "partydecl.hpp"
 
