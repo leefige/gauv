@@ -23,6 +23,8 @@ class Graph : public GraphBase {
 public:
     Graph() {}
     Graph(NodeVec nodes) : nodes(nodes) {}
+
+    void importFrontend();
 };
 
 class SubGraph : public GraphBase {

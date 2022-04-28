@@ -21,12 +21,13 @@ public:
     };
 
     Node() : guid(generateGuid()), hash(generateHash()) {}
-    Node(std::string name, std::string party, NodeType type=OTHERS, Operator op=Operator::NONE)
+    Node(std::string name, std::string party, NodeType type=OTHERS,
+         OpVec isOutputof, OpVec isInputof)
         : guid(generateGuid()), hash(generateHash()),
-          name(name), party(party), type(type), isResultOf(op) {}
+          name(name), party(party), type(type), isOutputOf(isOutputOf), isInputOf(isInputOf) {}
     Node(const Node &rhs)
         : guid(generateGuid()), hash(rhs.hash),
-          name(rhs.name), party(rhs.party), type(rhs.type), isResultOf(rhs.isResultOf) {}
+          name(rhs.name), party(rhs.party), type(rhs.type) {}
 
     ~Node() {}
 
@@ -43,6 +44,17 @@ public:
     NodeVec &getSuccessors() { return successors; }
     const NodeVec &getSuccessors() const { return successors; }
 
+    void *setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
+    void *setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
+
+    void addInputOp(Operator *inputOp) { isOutputOf.emplace_back(inputOp); }
+    void addOutputOp(Operator *outputOp) { isInputOf.emplace_back(outputOp); }
+
+    OpVec &getInputOps() { return isOutputOf; }
+    const OpVec &getInputs() const { return isOutputOf; }
+    OpVec &getOutputs() { return isInputOf; }
+    const OpVec &getOuputs() const { return isInputOf; }
+
     int getInDegrees() { return predecessors.size(); }
     int getOutDegrees() { return successors.size(); }
 
@@ -56,12 +68,11 @@ public:
 private:
     const size_t guid;
     uint64_t hash;
-
     std::string name;
     std::string party;
     NodeType type;
-    Operator isResultOf;
-
+    OpVec isOutputOf;
+    OpVec isInputOf;
     NodeVec predecessors;
     NodeVec successors;
 };
