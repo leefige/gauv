@@ -8,7 +8,8 @@ void Node::clear()  {
 }
 
 bool Node::checkValid() {
-    switch (isResultOf) {
+    // FIXME: is this intended?
+    switch (isOutputOf.front()->getType()) {
         case Operator::NONE:
             return false;
         case Operator::ADD:

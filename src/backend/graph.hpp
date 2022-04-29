@@ -1,37 +1,38 @@
 #pragma once
 
+#include <memory>
+
 #include "common.hpp"
 #include "node.hpp"
-
-#include <memory>
 
 namespace mpc {
 
 class GraphBase {
-protected:
+   protected:
     NodeVec nodes;
 
-public:
+   public:
+    GraphBase() {}
+    GraphBase(NodeVec nodes) : nodes(nodes) {}
     ~GraphBase();
 
     NodeVec getNodes() { return nodes; };
     const NodeVec getNodes() const { return nodes; };
-
 };
 
 class Graph : public GraphBase {
-public:
+   public:
     Graph() {}
-    Graph(NodeVec nodes) : nodes(nodes) {}
+    Graph(NodeVec nodes) : GraphBase(nodes) {}
 
     void importFrontend();
 };
 
 class SubGraph : public GraphBase {
-public:
+   public:
     SubGraph() {}
-    SubGraph(NodeVec nodes) : nodes(nodes) {}
-    SubGraph(const SubGraph &rhs) : SubGraph(rhs.nodes) {}
+    SubGraph(NodeVec nodes) : GraphBase(nodes) {}
+    SubGraph(const SubGraph& rhs) : SubGraph(rhs.nodes) {}
 };
 
 }  // end of namespace mpc
