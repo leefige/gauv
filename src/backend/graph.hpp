@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 
 #include "common.hpp"
@@ -25,7 +26,7 @@ class Graph : public GraphBase {
     Graph() {}
     Graph(NodeVec nodes) : GraphBase(nodes) {}
 
-    void importFrontend();
+    Node* importFrontend(const Expression* exp);
 };
 
 class SubGraph : public GraphBase {

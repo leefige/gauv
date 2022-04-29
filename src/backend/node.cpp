@@ -1,6 +1,6 @@
 #include "node.hpp"
 
-#include "../mpcgraph/operator.hpp"
+#include "../mpcgraph/builtin.hpp"
 
 namespace mpc {
 

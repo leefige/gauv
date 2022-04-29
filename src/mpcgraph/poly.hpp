@@ -56,6 +56,7 @@ public:
     size_t degree() const { return _degree; }
 
     const Placeholder& const_term() const { return _C; }
+    const PartyDecl& party() const { return _party; }
 
     Share& eval(PartyDecl& party)
     {

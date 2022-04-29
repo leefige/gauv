@@ -1,4 +1,5 @@
 #include "../../src/backend/builtin.hpp"
+#include "../../src/mpcgraph/builtin.hpp"
 
 #include <iostream>
 

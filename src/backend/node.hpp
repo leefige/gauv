@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "../mpcgraph/builtin.hpp"
 #include "common.hpp"
 #include "operation.hpp"
 
@@ -19,9 +20,15 @@ class Node {
 
         OTHERS = 200,
     };
+    enum NodeState {
+        UNVISITED = 0,
+        VISITED,
+        BUBBLE,
+        ELIMINATED,
+    } state;
 
     Node() : guid(generateGuid()), hash(generateHash()) {}
-    Node(std::string name, std::string party, OpVec isOutputof, OpVec isInputof,
+    Node(std::string name, PartyDecl* party, OpVec isOutputof, OpVec isInputof,
          NodeType type = OTHERS)
         : guid(generateGuid()),
           hash(generateHash()),
@@ -52,8 +59,8 @@ class Node {
     NodeVec& getSuccessors() { return successors; }
     const NodeVec& getSuccessors() const { return successors; }
 
-    void* setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
-    void* setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
+    void setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
+    void setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
 
     void addInputOp(Operation* inputOp) { isOutputOf.emplace_back(inputOp); }
     void addOutputOp(Operation* outputOp) { isInputOf.emplace_back(outputOp); }
@@ -73,12 +80,13 @@ class Node {
 
     bool checkValid();
 
+    std::string name;
+    const PartyDecl* party;
+    NodeType type;
+
    private:
     const size_t guid;
     uint64_t hash;
-    std::string name;
-    std::string party;
-    NodeType type;
     OpVec isOutputOf;
     OpVec isInputOf;
     NodeVec predecessors;

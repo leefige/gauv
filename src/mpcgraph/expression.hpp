@@ -36,7 +36,7 @@ public:
     const std::vector<Expression*>& coprands() const { return _oprands; }
 };
 
-const Equation Equation::nulleqn(Operator::NONE, {});
+inline const Equation Equation::nulleqn(Operator::NONE, {});
 
 class Expression {
     Context& _ctx;
@@ -125,7 +125,7 @@ public:
     }
 };
 
-Constant Constant::zero(Context::get_context(), "_const_zero");
+inline Constant Constant::zero(Context::get_context(), "_const_zero");
 
 class Secret : public Placeholder {
     Secret(const Secret&) = delete;

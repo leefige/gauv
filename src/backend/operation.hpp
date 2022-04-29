@@ -2,13 +2,18 @@
 
 #include <vector>
 
-#include "../mpcgraph/operator.hpp"
+#include "../mpcgraph/builtin.hpp"
 #include "common.hpp"
 
 namespace mpc {
 
 class Operation {
    public:
+   enum OperationState {
+        UNVISITED = 0,
+        VISITED,
+        ELIMINATED,
+    } state;
     Operation() : guid(generateGuid()), hash(generateHash()) {}
     Operation(Operator type)
         : guid(generateGuid()), hash(generateHash()), type(type) {}
