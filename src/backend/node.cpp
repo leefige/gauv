@@ -1,5 +1,7 @@
 #include "node.hpp"
 
+#include "../mpcgraph/operator.hpp"
+
 namespace mpc {
 
 void Node::clear()  {

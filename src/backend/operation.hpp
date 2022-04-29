@@ -2,34 +2,23 @@
 
 #include <vector>
 
+#include "../mpcgraph/operator.hpp"
 #include "common.hpp"
 
 namespace mpc {
 
-class Operator {
+class Operation {
    public:
-    enum OpType {
-        NONE = 0,
-
-        ADD = 100,
-        SUB,
-        MUL,
-        DIV,
-
-        EVAL = 200,
-        RECONSTRUCT,
-    };
-
-    Operator() : guid(generateGuid()), hash(generateHash()) {}
-    Operator(OpType type)
+    Operation() : guid(generateGuid()), hash(generateHash()) {}
+    Operation(Operator type)
         : guid(generateGuid()), hash(generateHash()), type(type) {}
-    Operator(OpType type, NodeVec inputs, NodeVec outputs)
+    Operation(Operator type, NodeVec inputs, Node* output)
         : guid(generateGuid()),
           hash(generateHash()),
           type(type),
           inputs(inputs),
-          outputs(outputs) {}
-    Operator(const Operator& rhs)
+          output(output) {}
+    Operation(const Operation& rhs)
         : guid(generateGuid()), hash(rhs.hash), type(rhs.type) {}
 
     void clear();
@@ -37,33 +26,31 @@ class Operator {
     void setPrecedessors(OpVec pre) { predecessors = pre; }
     void setSuccessors(OpVec suc) { successors = suc; }
 
-    void addPrecedessor(Operator* pre) { predecessors.emplace_back(pre); }
-    void addSuccessor(Operator* suc) { successors.emplace_back(suc); }
+    void addPrecedessor(Operation* pre) { predecessors.emplace_back(pre); }
+    void addSuccessor(Operation* suc) { successors.emplace_back(suc); }
 
     OpVec& getPrecedessors() { return predecessors; }
     const OpVec& getPrecedessors() const { return predecessors; }
     OpVec& getSuccessors() { return successors; }
     const OpVec& getSuccessors() const { return successors; }
 
-    void* setInputs(NodeVec inputs_) { inputs = inputs_; }
-    void* setOutputs(NodeVec outputs_) { outputs = outputs_; }
+    void setInputs(NodeVec inputs_) { inputs = inputs_; }
+    void setOutput(Node* output_) { output = output_; }
 
     void addInput(Node* input) { inputs.emplace_back(input); }
-    void addOutput(Node* output) { outputs.emplace_back(output); }
 
     NodeVec& getInputs() { return inputs; }
     const NodeVec& getInputs() const { return inputs; }
-    NodeVec& getOutputs() { return outputs; }
-    const NodeVec& getOuputs() const { return outputs; }
+    Node* getOutput() const { return output; }
 
-    const OpType getType() const { return type; }
+    const Operator getType() const { return type; }
 
    private:
     const size_t guid;
     uint64_t hash;
-    OpType type;
+    Operator type;
     NodeVec inputs;
-    NodeVec outputs;
+    Node* output;
     OpVec predecessors;
     OpVec successors;
 };

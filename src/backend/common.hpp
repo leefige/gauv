@@ -7,10 +7,10 @@
 namespace mpc {
 
 class Node;
-class Operator;
+class Operation;
 
 using NodeVec = std::vector<Node *>;
-using OpVec = std::vector<Operator *>;
+using OpVec = std::vector<Operation *>;
 
 inline size_t generateGuid() {
     static size_t guid = 0;

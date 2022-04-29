@@ -3,7 +3,7 @@
 #include <string>
 
 #include "common.hpp"
-#include "operator.hpp"
+#include "operation.hpp"
 
 namespace mpc {
 
@@ -55,8 +55,8 @@ class Node {
     void* setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
     void* setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
 
-    void addInputOp(Operator* inputOp) { isOutputOf.emplace_back(inputOp); }
-    void addOutputOp(Operator* outputOp) { isInputOf.emplace_back(outputOp); }
+    void addInputOp(Operation* inputOp) { isOutputOf.emplace_back(inputOp); }
+    void addOutputOp(Operation* outputOp) { isInputOf.emplace_back(outputOp); }
 
     OpVec& getInputOps() { return isOutputOf; }
     const OpVec& getInputs() const { return isOutputOf; }
