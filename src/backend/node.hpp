@@ -105,13 +105,16 @@ class Node {
         }
     }
 
+   private:
+    const size_t guid;
+    uint64_t hash;
+
+   public:
     std::string name;
     const PartyDecl* party;
     NodeType type;
 
    private:
-    const size_t guid;
-    uint64_t hash;
     OpVec isOutputOf;
     OpVec isInputOf;
     NodeVec predecessors;
