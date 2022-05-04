@@ -29,20 +29,7 @@ class Operation {
     void clear() {
         inputs.clear();
         output = nullptr;
-        predecessors.clear();
-        successors.clear();
     }
-
-    void setPrecedessors(OpVec pre) { predecessors = pre; }
-    void setSuccessors(OpVec suc) { successors = suc; }
-
-    void addPrecedessor(Operation* pre) { predecessors.emplace_back(pre); }
-    void addSuccessor(Operation* suc) { successors.emplace_back(suc); }
-
-    OpVec& getPrecedessors() { return predecessors; }
-    const OpVec& getPrecedessors() const { return predecessors; }
-    OpVec& getSuccessors() { return successors; }
-    const OpVec& getSuccessors() const { return successors; }
 
     void setInputs(NodeVec inputs_) { inputs = inputs_; }
     void setOutput(Node* output_) { output = output_; }

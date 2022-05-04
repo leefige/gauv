@@ -43,26 +43,15 @@ class Node {
           name(rhs.name),
           party(rhs.party),
           type(rhs.type),
-          isInputOf(rhs.isInputOf),
-          isOutputOf(rhs.isOutputOf) {}
+          isOutputOf(rhs.isOutputOf),
+          isInputOf(rhs.isInputOf) {}
 
     ~Node() {}
 
     void clear() {
-        predecessors.clear();
-        successors.clear();
+        isOutputOf.clear();
+        isInputOf.clear();
     }
-
-    void setPredecessors(NodeVec pre) { predecessors = pre; }
-    void setSuccessors(NodeVec suc) { successors = suc; }
-
-    void addPredecessor(Node* pre) { predecessors.emplace_back(pre); }
-    void addSuccessor(Node* suc) { successors.emplace_back(suc); }
-
-    NodeVec& getPredecessors() { return predecessors; }
-    const NodeVec& getPredecessors() const { return predecessors; }
-    NodeVec& getSuccessors() { return successors; }
-    const NodeVec& getSuccessors() const { return successors; }
 
     void setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
     void setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
@@ -70,13 +59,13 @@ class Node {
     void addInputOp(Operation* inputOp) { isOutputOf.emplace_back(inputOp); }
     void addOutputOp(Operation* outputOp) { isInputOf.emplace_back(outputOp); }
 
-    OpVec& getInputOps() { return isOutputOf; }
+    OpVec& getInputs() { return isOutputOf; }
     const OpVec& getInputs() const { return isOutputOf; }
     OpVec& getOutputs() { return isInputOf; }
     const OpVec& getOuputs() const { return isInputOf; }
 
-    int getInDegrees() { return predecessors.size(); }
-    int getOutDegrees() { return successors.size(); }
+    int getInDegrees() { return isOutputOf.size(); }
+    int getOutDegrees() { return isInputOf.size(); }
 
     bool isInput() { return type == INPUT; }
     bool isOutput() { return type == OUTPUT; }
@@ -117,8 +106,6 @@ class Node {
    private:
     OpVec isOutputOf;
     OpVec isInputOf;
-    NodeVec predecessors;
-    NodeVec successors;
 };
 
 }  // end of namespace mpc
