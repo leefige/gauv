@@ -84,10 +84,11 @@ class Graph : public GraphBase {
             case Operator::SUB:
             case Operator::MUL:
             case Operator::DIV:
-                // simple nodes->node operation
+            case Operator::RECONSTRUCT:
+                // simple nodes -> node operation
                 operation = new Operation(exp->cequation().op());
-                for (auto operand : exp->cequation().coprands()) {
-                    auto tmp_node = importFrontend(operand);
+                for (auto oprand : exp->cequation().coprands()) {
+                    auto tmp_node = importFrontend(oprand);
                     operation->addInput(tmp_node);
                     tmp_node->addOutputOp(operation);
                 }
@@ -104,7 +105,7 @@ class Graph : public GraphBase {
                 nodes.push_back(node);
                 break;
             case Operator::EVAL:
-                // oply -> share operation
+                // poly -> share operation
                 assert(exp->cequation().coprands().size() == 1);
                 assert(share != nullptr);  // target should be share
                 old_node = importFrontend(exp->cequation().coprands().front());
@@ -132,8 +133,6 @@ class Graph : public GraphBase {
 
                 edges.push_back(operation);
                 nodes.push_back(node);
-                break;
-            case Operator::RECONSTRUCT:
                 break;
             case Operator::POLILIZE:
                 operation = new Operation(Operator::POLILIZE);
@@ -285,6 +284,11 @@ class Graph : public GraphBase {
         }
 
         return true;
+    }
+
+    bool reverseReconstruct(Node* node) {
+        // TODO
+        return false;
     }
 
     bool tryProving() {
