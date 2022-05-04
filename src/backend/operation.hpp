@@ -4,7 +4,6 @@
 
 #include "../mpcgraph/builtin.hpp"
 #include "common.hpp"
-#include "node.hpp"
 
 namespace mpc {
 
@@ -48,22 +47,13 @@ class Operation {
     const Operator getType() const { return type; }
     void setType(Operator type_) { type = type_; }
 
-    std::string to_string() const {
-        std::stringstream ss;
-        ss << "<operation[" << type << "] ";
-        if (inputs.size()) {
-            ss << inputs[0]->getName();
-        }
-        for (int i = 1; i < inputs.size(); i++) {
-            ss << ", " << inputs[i]->getName();
-        }
-        ss << " -> ";
-        if (output != nullptr) {
-            ss << output->getName();
-        }
-        ss << ">";
-        return ss.str();
+    bool markEliminated() {
+        state = ELIMINATED;
+        return true;
     }
+    bool isEliminated() const { return state == ELIMINATED; }
+
+    std::string to_string() const;
 
    private:
     const size_t guid;

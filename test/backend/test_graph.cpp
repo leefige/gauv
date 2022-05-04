@@ -57,7 +57,7 @@ void test_graph_bgw() {
     cout << endl << "Init graph:" << endl << graph << endl;
     bool proved = graph.tryProving();
     cout << endl << "Proved? " << proved << endl;
-    cout << "Graph:" << endl << graph << endl;
+    cout << "Result graph:" << endl << graph << endl;
 }
 
 int main() {

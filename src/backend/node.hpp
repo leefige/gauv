@@ -27,6 +27,27 @@ class Node {
         ELIMINATED,
     } state;
 
+    static std::string to_string(NodeType node_type) {
+        switch (node_type) {
+            case INPUT:
+                return "IN";
+            case OUTPUT:
+                return "OUT";
+            case RANDOM:
+                return "RAND";
+            default:
+                return "-";
+        }
+    }
+    static std::string to_string(NodeState node_state) {
+        switch (node_state) {
+            case BUBBLE:
+                return "BUBBLE";
+            default:
+                return "-";
+        }
+    }
+
     Node() : guid(generateGuid()), hash(generateHash()) {}
     Node(std::string name, PartyDecl* party, OpVec isOutputof, OpVec isInputof,
          NodeType type = OTHERS)
@@ -65,15 +86,20 @@ class Node {
     const OpVec& getInputs() const { return isOutputOf; }
     OpVec& getOutputs() { return isInputOf; }
     const OpVec& getOuputs() const { return isInputOf; }
+    Operation* firstValidOutput() const;
 
     int getInDegrees() { return isOutputOf.size(); }
     int getOutDegrees() { return isInputOf.size(); }
+
+    int getValidInDegrees();
+    int getValidOutDegrees();
 
     bool isInput() { return type == INPUT; }
     bool isOutput() { return type == OUTPUT; }
     bool isRandom() { return type == RANDOM; }
     bool isConstant() { return type == CONSTANT; }
 
+    // Don't use! Mark state instead of removing.
     int removeOutputOp(Operation* outputOp) {
         for (auto it = isInputOf.begin(); it != isInputOf.end(); it++) {
             if (*it == outputOp) {
@@ -94,7 +120,8 @@ class Node {
     }
 
     bool markPotential() {
-        if (state != BUBBLE && state != ELIMINATED && getOutDegrees() == 0) {
+        if (state != BUBBLE && state != ELIMINATED &&
+            getValidOutDegrees() == 0) {
             state = POTENTIAL;
             return true;
         }
@@ -105,6 +132,7 @@ class Node {
         state = ELIMINATED;
         return true;
     }
+    bool isEliminated() const { return state == ELIMINATED; }
 
     /* bool checkValid() {
         // FIXME: is this intended?
@@ -130,7 +158,8 @@ class Node {
 
     std::string to_string() const {
         std::stringstream ss;
-        ss << "<node[" << party->name() << ", " << type << "] " << name << ">";
+        ss << "<node[" << party->name() << ", " << to_string(type) << ", "
+           << to_string(state) << "] " << name << ">";
         return ss.str();
     }
 
