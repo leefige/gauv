@@ -48,7 +48,10 @@ class Node {
 
     ~Node() {}
 
-    void clear();
+    void clear() {
+        predecessors.clear();
+        successors.clear();
+    }
 
     void setPredecessors(NodeVec pre) { predecessors = pre; }
     void setSuccessors(NodeVec suc) { successors = suc; }
@@ -80,7 +83,27 @@ class Node {
     bool isRandom() { return type == RANDOM; }
     bool isConstant() { return type == CONSTANT; }
 
-    bool checkValid();
+    bool checkValid() {
+        // FIXME: is this intended?
+        switch (isOutputOf.front()->getType()) {
+            case Operator::NONE:
+                return false;
+            case Operator::ADD:
+                return getInDegrees() == 2;
+            case Operator::SUB:
+                return getInDegrees() == 2;
+            case Operator::MUL:
+                return getInDegrees() == 2;
+            case Operator::DIV:
+                return getInDegrees() == 2;
+            case Operator::EVAL:
+                return true;
+            case Operator::RECONSTRUCT:
+                return true;
+            default:
+                return false;
+        }
+    }
 
     std::string name;
     const PartyDecl* party;

@@ -9,7 +9,7 @@ namespace mpc {
 
 class Operation {
    public:
-   enum OperationState {
+    enum OperationState {
         UNVISITED = 0,
         VISITED,
         ELIMINATED,
@@ -26,7 +26,12 @@ class Operation {
     Operation(const Operation& rhs)
         : guid(generateGuid()), hash(rhs.hash), type(rhs.type) {}
 
-    void clear();
+    void clear() {
+        inputs.clear();
+        output = nullptr;
+        predecessors.clear();
+        successors.clear();
+    }
 
     void setPrecedessors(OpVec pre) { predecessors = pre; }
     void setSuccessors(OpVec suc) { successors = suc; }
