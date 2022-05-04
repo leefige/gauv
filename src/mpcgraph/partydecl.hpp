@@ -29,7 +29,7 @@ class PartyDecl {
      * @param name Name of this party.
      *
      * @exception party_redefinition The name of this party has been
-     * rigistered in this context.
+     * registered in this context.
      */
     explicit PartyDecl(Context& context, const std::string& name)
         : _ctx(context), _name(name) {

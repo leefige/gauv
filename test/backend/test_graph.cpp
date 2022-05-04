@@ -40,6 +40,7 @@ void test_graph_bgw() {
     cout << endl;
 
     Graph graph;
+    std::vector<Expression*> deltas;
     for (int i = 0; i < parties.size(); i++) {
         auto recv_queue = transfers[i];
         Share* delta_i = recv_queue.back();
@@ -49,8 +50,12 @@ void test_graph_bgw() {
             recv_queue.pop_back();
             delta_i = &partial_sum;
         }
-        cout << parties[i]->name() << " yield delta: " << *delta_i << endl;
-        graph.importFrontend(delta_i);
+        deltas.push_back(delta_i);
+    }
+    for (int i = 0; i < parties.size(); i++) {
+        Share* subgraph_i = &Share::reconstruct(deltas, *parties[i]);
+        cout << parties[i]->name() << " yield subgraph: " << *subgraph_i << endl;
+        graph.importFrontend(subgraph_i);
     }
     graph.initOutputNodes();
     graph.initSearchState();

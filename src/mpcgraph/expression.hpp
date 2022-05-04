@@ -26,7 +26,7 @@ public:
 
     // TODO: ensure oprands in the same context
     explicit Equation(const Operator& op,
-        const std::initializer_list<Expression*>& oprands) noexcept
+        const std::vector<Expression*>& oprands) noexcept
         : _op(op), _oprands(oprands) {}
 
     explicit operator bool() const noexcept { return this != &nulleqn; }

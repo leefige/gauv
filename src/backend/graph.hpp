@@ -104,7 +104,6 @@ class Graph : public GraphBase {
                 nodes.push_back(node);
                 break;
             case Operator::EVAL:
-            case Operator::RECONSTRUCT:
                 // oply -> share operation
                 assert(exp->cequation().coprands().size() == 1);
                 assert(share != nullptr);  // target should be share
@@ -133,6 +132,8 @@ class Graph : public GraphBase {
 
                 edges.push_back(operation);
                 nodes.push_back(node);
+                break;
+            case Operator::RECONSTRUCT:
                 break;
             case Operator::POLILIZE:
                 operation = new Operation(Operator::POLILIZE);

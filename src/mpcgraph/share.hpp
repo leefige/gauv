@@ -150,6 +150,22 @@ public:
         );
         return *ret;
     }
+
+    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl& party)
+    {
+        auto& ctx = Context::get_context();
+        size_t num = ctx.n_share();
+        std::stringstream ss;
+        ss << "share_" << num;
+
+        auto ret = new Share(
+            ctx,
+            ss.str(),
+            Equation(Operator::RECONSTRUCT, shares),
+            party
+        );
+        return *ret;
+    }
 };
 
 } /* namespace mpc */
