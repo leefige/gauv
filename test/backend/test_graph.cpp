@@ -50,9 +50,14 @@ void test_graph_bgw() {
             delta_i = &partial_sum;
         }
         cout << parties[i]->name() << " yield delta: " << *delta_i << endl;
-        graph.importFrontend(delta_i)->type = Node::OUTPUT;
+        graph.importFrontend(delta_i);
     }
-    cout << graph << endl;
+    graph.initOutputNodes();
+    graph.initSearchState();
+    cout << endl << "Init graph:" << endl << graph << endl;
+    bool proved = graph.tryProving();
+    cout << endl << "Proved? " << proved << endl;
+    cout << "Graph:" << endl << graph << endl;
 }
 
 int main() {

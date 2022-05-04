@@ -158,20 +158,88 @@ class Graph : public GraphBase {
     }
 
     friend std::ostream& operator<<(std::ostream& o, const Graph& p) {
-        if (p.nodes.size()) {
-            o << p.nodes[0]->to_string();
+        NodeVec validNodes;
+        OpVec validEdges;
+        for (auto nd : p.nodes) {
+            if (nd->state != Node::ELIMINATED) validNodes.push_back(nd);
         }
-        for (int i = 1; i < p.nodes.size(); i++) {
-            o << std::endl << p.nodes[i]->to_string();
+        for (auto edge : p.edges) {
+            bool valid = true;
+            for (auto nd : edge->getInputs())
+                if (nd->state == Node::ELIMINATED) valid = false;
+            if (edge->getOutput()->state == Node::ELIMINATED) valid = false;
+            if (valid) validEdges.push_back(edge);
         }
-        if (p.edges.size()) {
-            if (p.nodes.size()) o << std::endl;
-            o << p.edges[0]->to_string();
+        if (validNodes.size()) {
+            o << validNodes[0]->to_string();
         }
-        for (int i = 1; i < p.edges.size(); i++) {
-            o << std::endl << p.edges[i]->to_string();
+        for (int i = 1; i < validNodes.size(); i++) {
+            o << std::endl << validNodes[i]->to_string();
+        }
+        if (validEdges.size()) {
+            if (validNodes.size()) o << std::endl;
+            o << validEdges[0]->to_string();
+        }
+        for (int i = 1; i < validEdges.size(); i++) {
+            o << std::endl << validEdges[i]->to_string();
         }
         return o;
+    }
+
+    void initOutputNodes() {
+        for (auto nd : nodes) {
+            if (nd->getOutDegrees() == 0 && nd->type == Node::NONE)
+                nd->type = Node::OUTPUT;
+        }
+    }
+
+    void initSearchState() {
+        for (auto nd : nodes) {
+            if (nd->getInDegrees() == 0 && !nd->party->is_corrupted()) {
+                nd->state = Node::BUBBLE;
+            } else if (nd->getOutDegrees() == 0) {
+                nd->state = Node::POTENTIAL;
+            } else {
+                nd->state = Node::UNVISITED;
+            }
+        }
+    }
+
+    bool hasBubble() const {
+        for (auto nd : nodes) {
+            if (nd->state == Node::BUBBLE) return true;
+        }
+        return false;
+    }
+
+    bool eliminateTailingNode(Node* node) {
+        if (node->getOutDegrees()) return false;
+        if (node->party->is_corrupted()) return false;
+        for (auto edge : node->getInputs()) {
+            for (auto nd : edge->getInputs()) {
+                assert(nd->removeOutputOp(edge) >= 0);
+                nd->markPotential();
+            }
+        }
+        node->markEliminated();
+        return true;
+    }
+
+    bool tryProving() {
+        while (hasBubble()) {
+            bool hasChange = false;
+            for (auto node : nodes) {
+                if (node->state == Node::POTENTIAL ||
+                    node->state == Node::BUBBLE) {
+                    if (eliminateTailingNode(node)) {
+                        hasChange = true;
+                        break;
+                    }
+                }
+            }
+            if (!hasChange) break;
+        }
+        return !hasBubble();
     }
 };
 

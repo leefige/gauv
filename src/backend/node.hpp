@@ -22,6 +22,7 @@ class Node {
     enum NodeState {
         UNVISITED = 0,
         VISITED,
+        POTENTIAL,
         BUBBLE,
         ELIMINATED,
     } state;
@@ -72,6 +73,38 @@ class Node {
     bool isOutput() { return type == OUTPUT; }
     bool isRandom() { return type == RANDOM; }
     bool isConstant() { return type == CONSTANT; }
+
+    int removeOutputOp(Operation* outputOp) {
+        for (auto it = isInputOf.begin(); it != isInputOf.end(); it++) {
+            if (*it == outputOp) {
+                isInputOf.erase(it);
+                return isInputOf.size();
+            }
+        }
+        return -1;
+    }
+    int removeInputOp(Operation* inputOp) {
+        for (auto it = isOutputOf.begin(); it != isOutputOf.end(); it++) {
+            if (*it == inputOp) {
+                isOutputOf.erase(it);
+                return isOutputOf.size();
+            }
+        }
+        return -1;
+    }
+
+    bool markPotential() {
+        if (state != BUBBLE && state != ELIMINATED && getOutDegrees() == 0) {
+            state = POTENTIAL;
+            return true;
+        }
+        return false;
+    }
+
+    bool markEliminated() {
+        state = ELIMINATED;
+        return true;
+    }
 
     /* bool checkValid() {
         // FIXME: is this intended?
