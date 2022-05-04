@@ -42,7 +42,9 @@ class Node {
           hash(rhs.hash),
           name(rhs.name),
           party(rhs.party),
-          type(rhs.type) {}
+          type(rhs.type),
+          isInputOf(rhs.isInputOf),
+          isOutputOf(rhs.isOutputOf) {}
 
     ~Node() {}
 

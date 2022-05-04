@@ -5,12 +5,14 @@
 
 #include "common.hpp"
 #include "node.hpp"
+#include "../mpcgraph/builtin.hpp"
 
 namespace mpc {
 
 class GraphBase {
    protected:
     NodeVec nodes;
+    OpVec edges;
 
    public:
     GraphBase() {}
@@ -22,6 +24,8 @@ class GraphBase {
 };
 
 class Graph : public GraphBase {
+    // frontend -> backend map
+    std::unordered_map<const Expression*, Node*> frontBackMap;
    public:
     Graph() {}
     Graph(NodeVec nodes) : GraphBase(nodes) {}

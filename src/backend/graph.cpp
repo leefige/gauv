@@ -5,13 +5,19 @@
 namespace mpc {
 
 GraphBase::~GraphBase() {
+    // TODO: deallocate unused node when import frontend
     // FIXME: does all graphs have strong reference to nodes?
     for (auto node : nodes)
         if (node != nullptr) delete node;
 }
 
 Node* Graph::importFrontend(const Expression* exp) {
+    // hit and return
+    auto it = frontBackMap.find(exp);
+    if (it != frontBackMap.end()) return it->second;
+
     Operation* operation = nullptr;
+    Node* old_node = nullptr;
     Node* node = nullptr;
     auto secret = dynamic_cast<const Secret*>(exp);
     auto share = dynamic_cast<const Share*>(exp);
@@ -21,6 +27,7 @@ Node* Graph::importFrontend(const Expression* exp) {
             break;
         case Operator::INPUT:
             if (secret != nullptr) {
+                // create new secret node
                 node = new Node();
                 node->name = secret->name();
                 node->type = Node::INPUT;
@@ -32,8 +39,9 @@ Node* Graph::importFrontend(const Expression* exp) {
         case Operator::TRANSFER:
             assert(exp->cequation().coprands().size() == 1);
             assert(share != nullptr);  // transfer target should be share
-            node = importFrontend(exp->cequation().coprands().front());
-            // directly rewrite node name and party
+            old_node = importFrontend(exp->cequation().coprands().front());
+            // copy and rewrite node name and party
+            node = new Node(*old_node);
             node->name = share->name();
             node->party = &share->party();
             break;
@@ -92,6 +100,7 @@ Node* Graph::importFrontend(const Expression* exp) {
         default:
             break;
     }
+    frontBackMap[exp] = node;
     return node;
 }
 
