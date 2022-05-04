@@ -4,7 +4,6 @@
 
 #include "../mpcgraph/builtin.hpp"
 #include "common.hpp"
-#include "operation.hpp"
 
 namespace mpc {
 
@@ -53,6 +52,8 @@ class Node {
         isInputOf.clear();
     }
 
+    const std::string& getName() const { return name; }
+
     void setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
     void setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
 
@@ -72,7 +73,7 @@ class Node {
     bool isRandom() { return type == RANDOM; }
     bool isConstant() { return type == CONSTANT; }
 
-    bool checkValid() {
+    /* bool checkValid() {
         // FIXME: is this intended?
         switch (isOutputOf.front()->getType()) {
             case Operator::NONE:
@@ -92,6 +93,12 @@ class Node {
             default:
                 return false;
         }
+    } */
+
+    std::string to_string() const {
+        std::stringstream ss;
+        ss << "<node[" << party->name() << ", " << type << "] " << name << ">";
+        return ss.str();
     }
 
    private:

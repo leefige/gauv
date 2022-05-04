@@ -1,11 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <iostream>
 #include <memory>
 
 #include "../mpcgraph/builtin.hpp"
 #include "common.hpp"
 #include "node.hpp"
+#include "operation.hpp"
 
 namespace mpc {
 
@@ -126,6 +128,9 @@ class Graph : public GraphBase {
                 operation = new Operation(Operator::POLILIZE);
                 node = new Node();
                 assert(poly != nullptr);
+                node->name = poly->name();
+                node->party = &poly->party();
+                node->type = Node::OTHERS;
                 old_node = importFrontend(&poly->const_term());
                 if (old_node != nullptr) {
                     operation->addInput(old_node);
@@ -144,14 +149,29 @@ class Graph : public GraphBase {
                 }
                 operation->setOutput(node);
                 node->addInputOp(operation);
-                edges.push_back(operation);
-                nodes.push_back(node);
                 break;
             default:
                 break;
         }
         frontBackMap[exp] = node;
         return node;
+    }
+
+    friend std::ostream& operator<<(std::ostream& o, const Graph& p) {
+        if (p.nodes.size()) {
+            o << p.nodes[0]->to_string();
+        }
+        for (int i = 1; i < p.nodes.size(); i++) {
+            o << std::endl << p.nodes[i]->to_string();
+        }
+        if (p.edges.size()) {
+            if (p.nodes.size()) o << std::endl;
+            o << p.edges[0]->to_string();
+        }
+        for (int i = 1; i < p.edges.size(); i++) {
+            o << std::endl << p.edges[i]->to_string();
+        }
+        return o;
     }
 };
 
