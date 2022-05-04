@@ -16,6 +16,12 @@ int Node::getValidOutDegrees() {
         if (!e->isEliminated()) deg++;
     return deg;
 }
+Operation* Node::firstValidInput() const {
+    for (auto e : isOutputOf)
+        if (!e->isEliminated()) return e;
+    assert(false);
+    return nullptr;
+}
 Operation* Node::firstValidOutput() const {
     for (auto e : isInputOf)
         if (!e->isEliminated()) return e;

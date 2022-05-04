@@ -12,6 +12,7 @@ class Operation {
     enum OperationState {
         UNVISITED = 0,
         VISITED,
+        GENERATED,
         ELIMINATED,
     } state;
     Operation() : guid(generateGuid()), hash(generateHash()) {}
@@ -46,6 +47,12 @@ class Operation {
 
     const Operator getType() const { return type; }
     void setType(Operator type_) { type = type_; }
+
+    bool markGenerated() {
+        state = GENERATED;
+        return true;
+    }
+    bool isGenerated() const { return state == GENERATED; }
 
     bool markEliminated() {
         state = ELIMINATED;

@@ -86,6 +86,7 @@ class Node {
     const OpVec& getInputs() const { return isOutputOf; }
     OpVec& getOutputs() { return isInputOf; }
     const OpVec& getOuputs() const { return isInputOf; }
+    Operation* firstValidInput() const;
     Operation* firstValidOutput() const;
 
     int getInDegrees() { return isOutputOf.size(); }

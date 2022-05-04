@@ -34,6 +34,8 @@ class GraphBase {
 class Graph : public GraphBase {
     // frontend -> backend map
     std::unordered_map<const Expression*, Node*> frontBackMap;
+    // polynomial degrees
+    size_t T = 0;
 
    public:
     Graph() {}
@@ -138,6 +140,7 @@ class Graph : public GraphBase {
                 operation = new Operation(Operator::POLILIZE);
                 node = new Node();
                 assert(poly != nullptr);
+                if (T < poly->degree()) T = poly->degree();
                 node->name = poly->name();
                 node->party = &poly->party();
                 node->type = Node::OTHERS;
@@ -287,8 +290,55 @@ class Graph : public GraphBase {
     }
 
     bool reverseReconstruct(Node* node) {
-        // TODO
-        return false;
+        if (node->getValidInDegrees() != 1) return false;
+        Operation* edge = node->firstValidInput();
+        if (edge->getType() != Operator::RECONSTRUCT) return false;
+        // check reconstruct operator
+        NodeVec corruptedNodes;
+        NodeVec uncorruptedNodes;
+        if (node->party->is_corrupted()) {
+            corruptedNodes.push_back(node);
+        } else {
+            uncorruptedNodes.push_back(node);
+        }
+        for (auto nd : edge->getInputs()) {
+            if (nd->party->is_corrupted()) {
+                corruptedNodes.push_back(nd);
+            } else {
+                uncorruptedNodes.push_back(nd);
+            };
+        }
+        if (corruptedNodes.size() <= T) return false;
+
+        // reverse connections
+        // FIXME: use all the corrupted nodes as input ?
+        node->removeInputOp(edge);
+        for (auto nd : edge->getInputs()) {
+            nd->removeOutputOp(edge);
+        }
+        edge->markEliminated();
+
+        for (auto uncor_nd : uncorruptedNodes) {
+            Operation* new_edge = new Operation(Operator::RECONSTRUCT, corruptedNodes, uncor_nd);
+            new_edge->markGenerated();
+            edges.push_back(new_edge);
+
+            uncor_nd->addInputOp(new_edge);
+            for (auto cor_nd : corruptedNodes) {
+                cor_nd->addOutputOp(new_edge);
+            }
+        }
+
+        // update bubbles
+        for (auto uncor_nd : uncorruptedNodes) {
+            int inDegrees = 0;
+            for (auto e : uncor_nd->getInputs()) {
+                if (!e->isEliminated()) inDegrees++;
+            }
+            if (0 < inDegrees) uncor_nd->state = Node::BUBBLE;
+        }
+
+        return true;
     }
 
     bool tryProving() {
@@ -297,11 +347,10 @@ class Graph : public GraphBase {
             for (auto node : nodes) {
                 if (node->state == Node::POTENTIAL ||
                     node->state == Node::BUBBLE) {
-                    if (eliminateTailingNode(node)) {
-                        hasChange = true;
-                        break;
-                    }
-                    if (simulatePolynomial(node)) {
+                    if (eliminateTailingNode(node) ||
+                        eliminateTailingEdge(node) ||
+                        simulatePolynomial(node)   ||
+                        reverseReconstruct(node)) {
                         hasChange = true;
                         break;
                     }
