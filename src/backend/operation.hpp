@@ -24,7 +24,11 @@ class Operation {
           inputs(inputs),
           output(output) {}
     Operation(const Operation& rhs)
-        : guid(generateGuid()), hash(rhs.hash), type(rhs.type) {}
+        : guid(generateGuid()),
+          hash(rhs.hash),
+          type(rhs.type),
+          inputs(rhs.inputs),
+          output(rhs.output) {}
 
     void clear() {
         inputs.clear();
@@ -41,6 +45,7 @@ class Operation {
     Node* getOutput() const { return output; }
 
     const Operator getType() const { return type; }
+    void setType(Operator type_) { type = type_; }
 
    private:
     const size_t guid;
@@ -48,8 +53,6 @@ class Operation {
     Operator type;
     NodeVec inputs;
     Node* output;
-    OpVec predecessors;
-    OpVec successors;
 };
 
 }  // end of namespace mpc

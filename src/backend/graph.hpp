@@ -41,6 +41,7 @@ class Graph : public GraphBase {
         auto it = frontBackMap.find(exp);
         if (it != frontBackMap.end()) return it->second;
 
+        Operation* old_operation = nullptr;
         Operation* operation = nullptr;
         Node* old_node = nullptr;
         Node* node = nullptr;
@@ -64,11 +65,8 @@ class Graph : public GraphBase {
             case Operator::TRANSFER:
                 assert(exp->cequation().coprands().size() == 1);
                 assert(share != nullptr);  // transfer target should be share
-                old_node = importFrontend(exp->cequation().coprands().front());
-                // copy and rewrite node name and party
-                node = new Node(*old_node);
-                node->name = share->name();
-                node->party = &share->party();
+                node = importFrontend(exp->cequation().coprands().front());
+                // transfer passes on the node
                 break;
             case Operator::ADD:
             case Operator::SUB:
@@ -79,49 +77,76 @@ class Graph : public GraphBase {
                 for (auto operand : exp->cequation().coprands()) {
                     auto tmp_node = importFrontend(operand);
                     operation->addInput(tmp_node);
-                    tmp_node->addInputOp(operation);
+                    tmp_node->addOutputOp(operation);
                 }
                 node = new Node();
                 assert(share != nullptr);
                 node->name = share->name();
                 node->party = &share->party();
                 node->type = Node::NONE;
-                node->addOutputOp(operation);
+
+                node->addInputOp(operation);
                 operation->setOutput(node);
+
+                edges.push_back(operation);
                 nodes.push_back(node);
                 break;
             case Operator::EVAL:
             case Operator::RECONSTRUCT:
+                // oply -> share operation
                 assert(exp->cequation().coprands().size() == 1);
                 assert(share != nullptr);  // target should be share
-                node = importFrontend(exp->cequation().coprands().front());
+                old_node = importFrontend(exp->cequation().coprands().front());
+                assert(old_node->getInDegrees() == 1);
+                old_operation = old_node->getInputs().front();
+                assert(old_operation->getType() == Operator::POLILIZE);
+
+                // copy
+                operation = new Operation(*old_operation);
+                node = new Node(*old_node);
+
+                // properties
+                operation->setType(exp->cequation().op());
                 node->name = share->name();
                 node->party = &share->party();
                 node->type = Node::NONE;
-                break;
-            case Operator::POLILIZE: {
-                operation = new Operation(Operator::POLILIZE);
-                assert(poly != nullptr);
-                auto const_term_node = importFrontend(&poly->const_term());
-                // make a random node first
-                auto random_node = new Node();
-                random_node->name = "coefficient_" + poly->name();
-                random_node->party = &poly->party();
-                random_node->type = Node::RANDOM;
-                random_node->addInputOp(operation);
-                operation->addInput(random_node);
-                nodes.push_back(random_node);
-                if (const_term_node != nullptr) {
-                    operation->addInput(const_term_node);
-                    const_term_node->addInputOp(operation);
-                    nodes.push_back(const_term_node);
-                }
-                // then the empty output node
-                node = new Node();
+
+                // connections
                 operation->setOutput(node);
-                node->addOutputOp(operation);
+                node->getInputs().clear();
+                node->addInputOp(operation);
+                for (auto nd : old_operation->getInputs()) {
+                    nd->addOutputOp(operation);
+                }
+
+                edges.push_back(operation);
                 nodes.push_back(node);
-            } break;
+                break;
+            case Operator::POLILIZE:
+                operation = new Operation(Operator::POLILIZE);
+                node = new Node();
+                assert(poly != nullptr);
+                old_node = importFrontend(&poly->const_term());
+                if (old_node != nullptr) {
+                    operation->addInput(old_node);
+                    // old_node->addOutputOp(operation);
+                }
+                for (int i = 0; i < poly->degree(); i++) {
+                    // make a random node first
+                    auto random_node = new Node();
+                    random_node->name =
+                        poly->name() + "_coeff_" + std::to_string(i);
+                    random_node->party = &poly->party();
+                    random_node->type = Node::RANDOM;
+                    // random_node->addOutputOp(operation);
+                    operation->addInput(random_node);
+                    nodes.push_back(random_node);
+                }
+                operation->setOutput(node);
+                node->addInputOp(operation);
+                edges.push_back(operation);
+                nodes.push_back(node);
+                break;
             default:
                 break;
         }
