@@ -253,6 +253,7 @@ class Graph : public GraphBase {
     }
 
     bool eliminateTailingNode(Node* node) {
+        if (node->isView) return false;
         if (node->getValidOutDegrees()) return false;
         if (node->party->is_corrupted()) return false;
         node->markEliminated();
@@ -267,8 +268,24 @@ class Graph : public GraphBase {
     }
 
     bool eliminateTailingEdge(Node* node) {
-        // TODO
-        return false;
+        if (node->getValidOutDegrees()) return false;
+        if (node->party->is_corrupted()) return false;
+        int count_kept_edges = 0;
+        for (auto edge : node->getInputs()) {
+            if (edge->isGenerated()) count_kept_edges += 1;
+        }
+        if (count_kept_edges == 0) return false;
+        // no edge to remove
+        if (count_kept_edges == node->getValidInDegrees()) return false;
+
+        for (auto edge : node->getInputs()) {
+            if (edge->isGenerated() || edge->isEliminated()) continue;
+            edge->markEliminated();
+            for (auto nd : edge->getInputs()) {
+                nd->markPotential();
+            }
+        }
+        return true;
     }
 
     bool simulatePolynomial(Node* node) {
