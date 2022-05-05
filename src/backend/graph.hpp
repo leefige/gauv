@@ -268,6 +268,7 @@ class Graph : public GraphBase {
     }
 
     bool eliminateTailingEdge(Node* node) {
+        return false;
         if (node->getValidOutDegrees()) return false;
         if (node->party->is_corrupted()) return false;
         int count_kept_edges = 0;
