@@ -268,7 +268,6 @@ class Graph : public GraphBase {
     }
 
     bool eliminateTailingEdge(Node* node) {
-        return false;
         if (node->getValidOutDegrees()) return false;
         if (node->party->is_corrupted()) return false;
         int count_kept_edges = 0;
@@ -286,6 +285,13 @@ class Graph : public GraphBase {
                 nd->markPotential();
             }
         }
+
+        if (count_kept_edges == 1) {
+            assert(node->state == Node::BUBBLE);
+            node->state = Node::VISITED;
+        }
+
+        transformTape.push_back(std::make_pair(node, TAIL_EDGE));
         return true;
     }
 
@@ -333,6 +339,8 @@ class Graph : public GraphBase {
         if (node->getValidInDegrees() != 1) return false;
         Operation* edge = node->firstValidInput();
         if (edge->getType() != Operator::RECONSTRUCT) return false;
+        // avoid loop
+        if (edge->isGenerated()) return false;
         // check reconstruct operator
         NodeVec corruptedNodes;
         NodeVec uncorruptedNodes;
