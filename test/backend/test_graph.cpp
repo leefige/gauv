@@ -50,7 +50,7 @@ void test_graph_bgw() {
             recv_queue.pop_back();
             delta_i = &partial_sum;
         }
-        deltas.push_back(delta_i);
+        deltas.push_back(&(delta_i->transfer(*parties[0])));
     }
     for (int i = 0; i < parties.size(); i++) {
         Share* subgraph_i = &Share::reconstruct(deltas, *parties[i]);

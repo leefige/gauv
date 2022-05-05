@@ -153,6 +153,14 @@ public:
 
     static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl& party)
     {
+        const PartyDecl& party_0 = dynamic_cast<const Share*>(shares[0])->_party;
+        for (auto share : shares) {
+            const PartyDecl& party_i = dynamic_cast<const Share*>(share)->_party;
+            if (party_0 != party_i) {
+                throw party_mismatch(party_0, party_i);
+            }
+        }
+
         auto& ctx = Context::get_context();
         size_t num = ctx.n_share();
         std::stringstream ss;
