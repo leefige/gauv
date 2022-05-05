@@ -103,6 +103,9 @@ class Graph : public GraphBase {
                 assert(share != nullptr);  // transfer target should be share
                 node = importFrontend(exp->cequation().coprands().front());
                 // transfer passes on the node
+                if (share->party().is_corrupted()) {
+                    node->isView = true;
+                }
                 break;
             case Operator::ADD:
             case Operator::SUB:
@@ -301,13 +304,7 @@ class Graph : public GraphBase {
         }
 
         for (auto nd : edge->getInputs()) {
-            if (nd->type == Node::RANDOM) {
-                nd->markEliminated();
-            } else {
-                // FIXME:
-                // 这里并未假设node一定是secret，假如是普通的share那么可以做这个消去吗？
-                nd->markPotential();
-            }
+            nd->markEliminated();
         }
 
         transformTape.push_back(std::make_pair(node, SIM_POLY));

@@ -27,6 +27,8 @@ class Node {
         ELIMINATED,
     } state;
 
+    bool isView = false;
+
     static std::string to_string(NodeType node_type) {
         switch (node_type) {
             case INPUT:
@@ -161,7 +163,7 @@ class Node {
     std::string to_string() const {
         std::stringstream ss;
         ss << "<node[" << party->name() << ", " << to_string(type) << ", "
-           << to_string(state) << "] " << name << ">";
+           << to_string(state) << ", " << isView << "] " << name << ">";
         return ss.str();
     }
 
