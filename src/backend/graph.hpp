@@ -311,15 +311,11 @@ class Graph : public GraphBase {
         if (corruptedNodes.size() <= T) return false;
 
         // reverse connections
-        // FIXME: use all the corrupted nodes as input ?
-        node->removeInputOp(edge);
-        for (auto nd : edge->getInputs()) {
-            nd->removeOutputOp(edge);
-        }
         edge->markEliminated();
 
         for (auto uncor_nd : uncorruptedNodes) {
-            Operation* new_edge = new Operation(Operator::RECONSTRUCT, corruptedNodes, uncor_nd);
+            Operation* new_edge =
+                new Operation(Operator::RECONSTRUCT, corruptedNodes, uncor_nd);
             new_edge->markGenerated();
             edges.push_back(new_edge);
 
@@ -331,11 +327,10 @@ class Graph : public GraphBase {
 
         // update bubbles
         for (auto uncor_nd : uncorruptedNodes) {
-            int inDegrees = 0;
-            for (auto e : uncor_nd->getInputs()) {
-                if (!e->isEliminated()) inDegrees++;
-            }
-            if (0 < inDegrees) uncor_nd->state = Node::BUBBLE;
+            if (1 < uncor_nd->getValidInDegrees())
+                uncor_nd->state = Node::BUBBLE;
+            else
+                uncor_nd->markPotential();
         }
 
         return true;
@@ -349,8 +344,7 @@ class Graph : public GraphBase {
                     node->state == Node::BUBBLE) {
                     if (eliminateTailingNode(node) ||
                         eliminateTailingEdge(node) ||
-                        simulatePolynomial(node)   ||
-                        reverseReconstruct(node)) {
+                        simulatePolynomial(node) || reverseReconstruct(node)) {
                         hasChange = true;
                         break;
                     }

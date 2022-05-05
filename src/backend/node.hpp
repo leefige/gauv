@@ -110,6 +110,7 @@ class Node {
         }
         return -1;
     }
+    // Don't use! Mark state instead of removing.
     int removeInputOp(Operation* inputOp) {
         for (auto it = isOutputOf.begin(); it != isOutputOf.end(); it++) {
             if (*it == inputOp) {
