@@ -38,6 +38,28 @@ class Graph : public GraphBase {
     size_t T = 0;
 
    public:
+    enum TransformType {
+        TAIL_NODE,
+        TAIL_EDGE,
+        REVERSE_RECONSTRUCT,
+        SIM_POLY,
+    };
+
+    static std::string to_string(TransformType type) {
+        switch (type) {
+            case TAIL_NODE:
+                return "TAIL_NODE";
+            case TAIL_EDGE:
+                return "TAIL_EDGE";
+            case REVERSE_RECONSTRUCT:
+                return "REVERSE_RECONSTRUCT";
+            case SIM_POLY:
+                return "SIM_POLY";
+        }
+    }
+
+    std::vector<std::pair<Node*, TransformType>> transformTape;
+
     Graph() {}
     Graph(NodeVec nodes) : GraphBase(nodes) {}
     ~Graph() {
@@ -217,6 +239,7 @@ class Graph : public GraphBase {
         for (auto edge : edges) {
             edge->state = Operation::UNVISITED;
         }
+        transformTape.clear();
     }
 
     bool hasBubble() const {
@@ -236,6 +259,7 @@ class Graph : public GraphBase {
                 nd->markPotential();
             }
         }
+        transformTape.push_back(std::make_pair(node, TAIL_NODE));
         return true;
     }
 
@@ -286,6 +310,7 @@ class Graph : public GraphBase {
             }
         }
 
+        transformTape.push_back(std::make_pair(node, SIM_POLY));
         return true;
     }
 
@@ -333,6 +358,7 @@ class Graph : public GraphBase {
                 uncor_nd->markPotential();
         }
 
+        transformTape.push_back(std::make_pair(node, REVERSE_RECONSTRUCT));
         return true;
     }
 

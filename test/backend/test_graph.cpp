@@ -54,15 +54,21 @@ void test_graph_bgw() {
     }
     for (int i = 0; i < parties.size(); i++) {
         Share* subgraph_i = &Share::reconstruct(deltas, *parties[i]);
-        cout << parties[i]->name() << " yield subgraph: " << *subgraph_i << endl;
+        cout << parties[i]->name() << " yield subgraph: " << *subgraph_i
+             << endl;
         graph.importFrontend(subgraph_i);
     }
     graph.initOutputNodes();
     graph.initSearchState();
     cout << endl << "Init graph:" << endl << graph << endl;
     bool proved = graph.tryProving();
-    cout << endl << "Proved? " << proved << endl;
+    cout << endl << "Proved? " << std::boolalpha << proved << endl;
     cout << "Result graph:" << endl << graph << endl;
+    cout << endl << "Transform history:" << endl;
+    for (auto& pair : graph.transformTape) {
+        cout << pair.first->getName() << " " << Graph::to_string(pair.second)
+             << endl;
+    }
 }
 
 int main() {
