@@ -119,10 +119,13 @@ class Graph : public GraphBase {
             case Operator::SUB:
             case Operator::MUL:
             case Operator::DIV:
+            case Operator::SCALARMUL:
             case Operator::RECONSTRUCT:
                 // simple nodes -> node operation
                 operation = new Operation(exp->cequation().op());
                 for (auto oprand : exp->cequation().coprands()) {
+                    // skip constant
+                    if(dynamic_cast<const Constant*>(oprand)) continue;
                     auto tmp_node = importFrontend(oprand);
                     operation->addInput(tmp_node);
                     tmp_node->addOutputOp(operation);
