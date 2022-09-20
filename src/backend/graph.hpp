@@ -37,6 +37,19 @@ class Graph : public GraphBase {
     // polynomial degrees
     size_t T = 0;
 
+    static bool nodeFromHonest(Node* node) {
+        if (!node->party->is_corrupted()) return true;
+        Operation* edge = nullptr;
+        for (auto e : node->getInputs()) {
+            if (!e->isEliminated() && e->getType() == Operator::TRANSFER) {
+                edge = e;
+                break;
+            }
+        }
+        return (edge != nullptr &&
+                !edge->getInputs().front()->party->is_corrupted());
+    }
+
    public:
     enum TransformType {
         TAIL_NODE,
@@ -346,10 +359,10 @@ class Graph : public GraphBase {
             uncorruptedNodes.push_back(node);
         }
         for (auto nd : edge->getInputs()) {
-            if (nd->party->is_corrupted()) {
-                corruptedNodes.push_back(nd);
-            } else {
+            if (nodeFromHonest(nd)) {
                 uncorruptedNodes.push_back(nd);
+            } else {
+                corruptedNodes.push_back(nd);
             };
         }
         if (corruptedNodes.size() <= T) return false;
@@ -371,7 +384,7 @@ class Graph : public GraphBase {
 
         // update bubbles
         for (auto uncor_nd : uncorruptedNodes) {
-            if (1 < uncor_nd->getValidInDegrees())
+            if (!uncor_nd->party->is_corrupted() && 1 < uncor_nd->getValidInDegrees())
                 uncor_nd->state = Node::BUBBLE;
             else
                 uncor_nd->markPotential();
@@ -382,16 +395,22 @@ class Graph : public GraphBase {
     }
 
     bool reverseTransit(Node* node) {
-        if (node->getValidInDegrees() != 1) return false;
-        Operation* edge = node->firstValidInput();
-        if (edge->getType() != Operator::TRANSFER) return false;
+        if (node->getValidInDegrees() <= 1) return false;
+        Operation* edge = nullptr;
+        for (auto e : node->getInputs()) {
+            if (!e->isEliminated() && !e->isGenerated() &&
+                e->getType() == Operator::TRANSFER) {
+                edge = e;
+                break;
+            }
+        }
+        if (edge == nullptr) return false;
         Node* src_node = edge->getInputs().front();
-        // avoid loop
-        if (edge->isGenerated()) return false;
 
         // reverse connections
         edge->markEliminated();
-        Operation* new_edge = new Operation(Operator::TRANSFER, {node}, src_node);
+        Operation* new_edge =
+            new Operation(Operator::TRANSFER, {node}, src_node);
         new_edge->markGenerated();
         edges.push_back(new_edge);
         src_node->addInputOp(new_edge);
@@ -417,8 +436,7 @@ class Graph : public GraphBase {
                     node->state == Node::BUBBLE) {
                     if (eliminateTailingNode(node) ||
                         eliminateTailingEdge(node) ||
-                        simulatePolynomial(node) || 
-                        reverseReconstruct(node) || 
+                        simulatePolynomial(node) || reverseReconstruct(node) ||
                         reverseTransit(node)) {
                         hasChange = true;
                         break;
