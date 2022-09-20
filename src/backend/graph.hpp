@@ -381,6 +381,34 @@ class Graph : public GraphBase {
         return true;
     }
 
+    bool reverseTransit(Node* node) {
+        if (node->getValidInDegrees() != 1) return false;
+        Operation* edge = node->firstValidInput();
+        if (edge->getType() != Operator::TRANSFER) return false;
+        Node* src_node = edge->getInputs().front();
+        // avoid loop
+        if (edge->isGenerated()) return false;
+
+        // reverse connections
+        edge->markEliminated();
+        Operation* new_edge = new Operation(Operator::TRANSFER, {node}, src_node);
+        new_edge->markGenerated();
+        edges.push_back(new_edge);
+        src_node->addInputOp(new_edge);
+        node->addOutputOp(new_edge);
+
+        // update bubbles
+        if (!src_node->party->is_corrupted()) {
+            if (1 < src_node->getValidInDegrees())
+                src_node->state = Node::BUBBLE;
+            else
+                src_node->markPotential();
+        }
+
+        transformTape.push_back(std::make_pair(node, REVERSE_TRANSIT));
+        return true;
+    }
+
     bool tryProving() {
         while (hasBubble()) {
             bool hasChange = false;
@@ -389,7 +417,9 @@ class Graph : public GraphBase {
                     node->state == Node::BUBBLE) {
                     if (eliminateTailingNode(node) ||
                         eliminateTailingEdge(node) ||
-                        simulatePolynomial(node) || reverseReconstruct(node)) {
+                        simulatePolynomial(node) || 
+                        reverseReconstruct(node) || 
+                        reverseTransit(node)) {
                         hasChange = true;
                         break;
                     }
