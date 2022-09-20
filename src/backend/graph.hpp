@@ -305,39 +305,45 @@ class Graph : public GraphBase {
     }
 
     bool simulatePolynomial(Node* node) {
-        if (node->getValidOutDegrees() != 1) return false;
-        Operation* edge = node->firstValidOutput();
-        if (edge->getType() != Operator::EVAL) return false;
-        auto dst = edge->getOutput();
-        if (dst->getValidInDegrees() != 1) return false;
-        // check eval operator
-        int random_count = 0;
-        for (auto nd : edge->getInputs()) {
-            if (nd->type == Node::RANDOM) random_count++;
-        }
-        if (random_count < edge->getInputs().size() - 1) return false;
-
-        // create replacement random node
-        auto new_dst = new Node(*dst);
-        new_dst->name = "sim_" + dst->getName();
-        new_dst->type = Node::RANDOM;
-        new_dst->state = Node::UNVISITED;
-        new_dst->getInputs().clear();
-        nodes.push_back(new_dst);
-
-        // change all reference to dst to new_dst
-        dst->markEliminated();
-        edge->markEliminated();
-        for (auto e : new_dst->getOuputs()) {
-            if (e->isEliminated()) continue;
-            for (auto it = e->getInputs().begin(); it != e->getInputs().end();
-                 it++) {
-                if (*it == dst) *it = new_dst;
+        NodeVec srcs, dests;
+        srcs.push_back(node);
+        OpVec old_edges;
+        // FIXME: all edges are from the same polynomial is assumed
+        for (auto e : node->getOuputs()) {
+            if (!e->isEliminated() && !e->isGenerated() &&
+                e->getType() == Operator::EVAL) {
+                old_edges.push_back(e);
+                srcs.push_back(e->getOutput());
             }
         }
+        if (srcs.size() > T + 1) return false;
+        if (old_edges.empty()) return false;
+        for (auto d : srcs) {
+            if (d->isRandom()) return false;
+        }
 
-        for (auto nd : edge->getInputs()) {
-            nd->markEliminated();
+        for (auto e : old_edges) e->markEliminated();
+        for (auto v : old_edges.front()->getInputs())
+            if (v->isRandom()) {
+                if (srcs.size() < T + 1)
+                    srcs.push_back(v);
+                else
+                    dests.push_back(v);
+            }
+        for (auto v : srcs)
+            if (v != node) v->type = Node::RANDOM;
+        for (auto d : dests) {
+            if (d->isRandom()) d->type = Node::NONE;
+            auto edge = new Operation(Operator::EVAL, srcs, d);
+            edge->markGenerated();
+            for (auto v : srcs) v->addOutputOp(edge);
+            d->addInputOp(edge);
+            edges.push_back(edge);
+
+            if (!d->party->is_corrupted() && 1 < d->getValidInDegrees())
+                d->state = Node::BUBBLE;
+            else
+                d->markPotential();
         }
 
         transformTape.push_back(std::make_pair(node, SIM_POLY));
@@ -384,7 +390,8 @@ class Graph : public GraphBase {
 
         // update bubbles
         for (auto uncor_nd : uncorruptedNodes) {
-            if (!uncor_nd->party->is_corrupted() && 1 < uncor_nd->getValidInDegrees())
+            if (!uncor_nd->party->is_corrupted() &&
+                1 < uncor_nd->getValidInDegrees())
                 uncor_nd->state = Node::BUBBLE;
             else
                 uncor_nd->markPotential();
