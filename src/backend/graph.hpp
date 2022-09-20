@@ -264,7 +264,6 @@ class Graph : public GraphBase {
     }
 
     bool eliminateTailingNode(Node* node) {
-        if (node->isView) return false;
         if (node->getValidOutDegrees()) return false;
         if (node->party->is_corrupted()) return false;
         node->markEliminated();
