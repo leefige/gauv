@@ -269,27 +269,28 @@ class Graph : public GraphBase {
 
     bool eliminateTailingEdge(Node* node) {
         if (node->getValidOutDegrees()) return false;
+        if (node->getValidInDegrees() <= 1) return false;
         if (node->party->is_corrupted()) return false;
-        int count_kept_edges = 0;
+        Operation* kept_edge = nullptr;
         for (auto edge : node->getInputs()) {
-            if (edge->isGenerated()) count_kept_edges += 1;
+            if (edge->isGenerated()) {
+                // keep one of the generated edges
+                kept_edge = edge;
+                break;
+            }
         }
-        if (count_kept_edges == 0) return false;
-        // no edge to remove
-        if (count_kept_edges == node->getValidInDegrees()) return false;
+        if (kept_edge == nullptr) return false;
 
         for (auto edge : node->getInputs()) {
-            if (edge->isGenerated() || edge->isEliminated()) continue;
+            if (edge == kept_edge || edge->isEliminated()) continue;
             edge->markEliminated();
             for (auto nd : edge->getInputs()) {
                 nd->markPotential();
             }
         }
 
-        if (count_kept_edges == 1) {
-            assert(node->state == Node::BUBBLE);
-            node->state = Node::VISITED;
-        }
+        assert(node->state == Node::BUBBLE);
+        node->state = Node::VISITED;
 
         transformTape.push_back(std::make_pair(node, TAIL_EDGE));
         return true;

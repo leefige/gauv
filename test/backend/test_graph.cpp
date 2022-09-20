@@ -11,18 +11,18 @@ using namespace std;
 void test_graph_bgw() {
     Context& ctx = Context::get_context();
 
-    constexpr const size_t SEC = 1;
-    PartyDecl p0(ctx, "p0");
-    p0.set_corrupted();
-    PartyDecl p1(ctx, "p1");
-    PartyDecl p2(ctx, "p2");
+    constexpr const size_t SEC = 2;
+    constexpr const size_t N = 2 * SEC + 1;
 
-    Secret x(ctx, "x", p0);
-    Secret y(ctx, "y", p1);
-    Secret z(ctx, "z", p2);
-
-    std::vector<PartyDecl*> parties{&p0, &p1, &p2};
-    std::vector<Secret*> secrets{&x, &y, &z};
+    std::vector<PartyDecl*> parties;
+    std::vector<Secret*> secrets;
+    for (int i = 0; i < N; i++) {
+        auto party = new PartyDecl(ctx, "p" + to_string(i));
+        auto secret = new Secret(ctx, "x" + to_string(i), *party);
+        parties.push_back(party);
+        secrets.push_back(secret);
+    }
+    for (int i = 0; i < SEC; i++) parties[i]->set_corrupted();
 
     std::vector<std::vector<Share*>> transfers;
     transfers.resize(parties.size());
@@ -69,6 +69,9 @@ void test_graph_bgw() {
         cout << pair.first->getName() << " " << Graph::to_string(pair.second)
              << endl;
     }
+
+    for (auto p : parties) delete p;
+    for (auto s : secrets) delete s;
 }
 
 int main() {
