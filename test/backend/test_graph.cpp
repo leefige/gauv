@@ -8,7 +8,8 @@
 using namespace mpc;
 using namespace std;
 
-void test_graph_bgw() {
+void test_graph_bgw()
+{
     Context& ctx = Context::get_context();
 
     constexpr const size_t SEC = 1;
@@ -74,7 +75,8 @@ void test_graph_bgw() {
     for (auto s : secrets) delete s;
 }
 
-int main() {
+int main()
+{
     test_graph_bgw();
     return 0;
 }

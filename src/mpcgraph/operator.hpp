@@ -16,6 +16,7 @@ enum class Operator {
     SUB,
     MUL,
     DIV,
+    SCALARMUL,
 
     EVAL,
     RECONSTRUCT,
@@ -45,6 +46,9 @@ inline std::ostream& operator<<(std::ostream& o, const Operator& op)
         break;
     case Operator::DIV:
         o << "DIV";
+        break;
+    case Operator::SCALARMUL:
+        o << "SCALARMUL";
         break;
     case Operator::EVAL:
         o << "EVAL";

@@ -131,6 +131,22 @@ public:
         return _binary_op(a, b, Operator::DIV);
     }
 
+    Share& scalarMul(Constant& c)
+    {
+        auto& ctx = Context::get_context();
+        size_t num = ctx.n_share();
+        std::stringstream ss;
+        ss << "share_" << num;
+
+        auto ret = new Share(
+            ctx,
+            ss.str(),
+            Equation(Operator::SCALARMUL, {this, &c}),
+            _party
+        );
+        return *ret; 
+    }
+
     Share& transfer(const PartyDecl& party)
     {
         if (_party == party) {
