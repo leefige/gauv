@@ -42,6 +42,7 @@ class Graph : public GraphBase {
         TAIL_NODE,
         TAIL_EDGE,
         REVERSE_RECONSTRUCT,
+        REVERSE_TRANSIT,
         SIM_POLY,
     };
 
@@ -53,6 +54,8 @@ class Graph : public GraphBase {
                 return "TAIL_EDGE";
             case REVERSE_RECONSTRUCT:
                 return "REVERSE_RECONSTRUCT";
+            case REVERSE_TRANSIT:
+                return "REVERSE_TRANSIT";
             case SIM_POLY:
                 return "SIM_POLY";
         }
@@ -99,14 +102,6 @@ class Graph : public GraphBase {
                 // placeholders not secret are not recorded
                 break;
             case Operator::TRANSFER:
-                assert(exp->cequation().coprands().size() == 1);
-                assert(share != nullptr);  // transfer target should be share
-                node = importFrontend(exp->cequation().coprands().front());
-                // transfer passes on the node
-                if (share->party().is_corrupted()) {
-                    node->isView = true;
-                }
-                break;
             case Operator::ADD:
             case Operator::SUB:
             case Operator::MUL:

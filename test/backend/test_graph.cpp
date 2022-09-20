@@ -11,7 +11,7 @@ using namespace std;
 void test_graph_bgw() {
     Context& ctx = Context::get_context();
 
-    constexpr const size_t SEC = 2;
+    constexpr const size_t SEC = 1;
     constexpr const size_t N = 2 * SEC + 1;
 
     std::vector<PartyDecl*> parties;
