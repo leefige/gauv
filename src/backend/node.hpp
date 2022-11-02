@@ -43,6 +43,8 @@ class Node {
         switch (node_state) {
             case BUBBLE:
                 return "BUBBLE";
+            case POTENTIAL:
+                return "P";
             default:
                 return "-";
         }
@@ -122,8 +124,8 @@ class Node {
     }
 
     bool markPotential() {
-        if (state != BUBBLE && state != ELIMINATED &&
-            getValidOutDegrees() == 0) {
+        if (state != BUBBLE && state != ELIMINATED/* &&
+            getValidOutDegrees() == 0*/) {
             state = POTENTIAL;
             return true;
         }
