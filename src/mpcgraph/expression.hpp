@@ -103,7 +103,7 @@ public:
      * @param name Name of the constant.
      *
      * @exception var_redefinition The name of this constant has been
-     * rigistered in this context.
+     * registered in this context.
      */
     explicit Constant(Context& context, const std::string& name)
             : Placeholder(context, name)
@@ -143,7 +143,7 @@ public:
      * @param party Const reference to the party.
      *
      * @exception var_redefinition The name of this secret has been
-     * rigistered in this context.
+     * registered in this context.
      */
     explicit Secret(Context& context, const std::string& name,
             const PartyDecl& party)

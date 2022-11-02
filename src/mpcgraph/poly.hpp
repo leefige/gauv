@@ -13,7 +13,7 @@ namespace mpc
 class Poly : public Expression {
     const size_t _degree;
     const PartyDecl& _party;
-    const Placeholder& _C;
+    const Expression& _C;
 
     Poly(const Poly&) = delete;
     Poly(Poly&&) = delete;
@@ -23,7 +23,7 @@ class Poly : public Expression {
     explicit Poly(Context& context,
             const std::string& name,
             const PartyDecl& party,
-            Placeholder& C,
+            Expression& C,
             size_t degree)
         : Expression(context, name, Equation(Operator::POLILIZE, {&C})),
             _degree(degree), _party(party), _C(C)
@@ -44,7 +44,7 @@ public:
     }
 
     static Poly& gen_poly(Context& context, PartyDecl& party,
-            Placeholder& C, size_t degree)
+            Expression& C, size_t degree)
     {
         size_t num = context.n_poly();
         std::stringstream ss;
@@ -55,7 +55,7 @@ public:
 
     size_t degree() const { return _degree; }
 
-    const Placeholder& const_term() const { return _C; }
+    const Expression& const_term() const { return _C; }
     const PartyDecl& party() const { return _party; }
 
     Share& eval(PartyDecl& party)

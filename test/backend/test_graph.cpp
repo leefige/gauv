@@ -8,6 +8,42 @@
 using namespace mpc;
 using namespace std;
 
+/*
+    p0 yield subgraph:
+    <share[p0] share_23=RECONSTRUCT(
+        <share[p0] share_16=ADD(
+            <share[p0] share_15=ADD(
+                <share[p0] share_11=TRANSFER(
+                    <share[p2] share_10=EVAL(
+                        <poly{1}[p2][x2] poly_2>)>)>,
+                <share[p0] share_6=TRANSFER(
+                    <share[p1] share_5=EVAL(
+                        <poly{1}[p1][x1] poly_1>)>)>)>,
+            <share[p0] share_0=EVAL(
+                <poly{1}[p0][x0] poly_0>)>)>,
+    <share[p0] share_19=TRANSFER(
+        <share[p1] share_18=ADD(
+            <share[p1] share_17=ADD(
+                <share[p1] share_13=TRANSFER(
+                    <share[p2] share_12=EVAL(
+                        <poly{1}[p2][x2] poly_2>)>)>,
+                <share[p1] share_7=EVAL(
+                    <poly{1}[p1][x1] poly_1>)>)>,
+            <share[p1] share_2=TRANSFER(
+                <share[p0] share_1=EVAL(
+                    <poly{1}[p0][x0] poly_0>)>)>)>)>,
+    <share[p0] share_22=TRANSFER(
+        <share[p2] share_21=ADD(
+            <share[p2] share_20=ADD(
+                <share[p2] share_14=EVAL(
+                    <poly{1}[p2][x2] poly_2>)>,
+                <share[p2] share_9=TRANSFER(
+                    <share[p1] share_8=EVAL(
+                        <poly{1}[p1][x1] poly_1>)>)>)>,
+            <share[p2] share_4=TRANSFER(
+                <share[p0] share_3=EVAL(
+                    <poly{1}[p0][x0] poly_0>)>)>)>)>)> 
+ */
 void test_graph_bgw()
 {
     Context& ctx = Context::get_context();
