@@ -131,11 +131,13 @@ void test_graph_bgw()
     graph.initOutputNodes();
     graph.initSearchState();
     cout << endl << "Init graph:" << endl << graph << endl;
-    bool proved = graph.tryProving();
+
+    GraphVec histories;
+    bool proved = tryProving(&graph, histories);
     cout << endl << "Proved? " << std::boolalpha << proved << endl;
     cout << "Result graph:" << endl << graph << endl;
     cout << endl << "Transform history:" << endl;
-    for (auto& pair : graph.transformTape) {
+    for (auto& pair : histories.back()->transformTape) {
         cout << pair.first->getName() << " " << Graph::to_string(pair.second)
              << endl;
     }

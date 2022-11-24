@@ -13,11 +13,10 @@
 namespace mpc {
 
 class GraphBase {
-   protected:
+   public:
     NodeVec nodes;
     OpVec edges;
 
-   public:
     GraphBase() {}
     GraphBase(NodeVec nodes) : nodes(nodes) {}
     ~GraphBase() {
@@ -37,6 +36,15 @@ class Graph : public GraphBase {
     // polynomial degrees
     size_t T = 0;
 
+   public:
+    enum TransformType {
+        TAIL_NODE,
+        TAIL_EDGE,
+        REVERSE_RECONSTRUCT,
+        REVERSE_TRANSIT,
+        SIM_POLY,
+    };
+
     static bool nodeFromHonest(Node* node) {
         if (!node->party->is_corrupted()) return true;
         Operation* edge = nullptr;
@@ -49,15 +57,6 @@ class Graph : public GraphBase {
         return (edge != nullptr &&
                 !edge->getInputs().front()->party->is_corrupted());
     }
-
-   public:
-    enum TransformType {
-        TAIL_NODE,
-        TAIL_EDGE,
-        REVERSE_RECONSTRUCT,
-        REVERSE_TRANSIT,
-        SIM_POLY,
-    };
 
     static std::string to_string(TransformType type) {
         switch (type) {
@@ -87,6 +86,8 @@ class Graph : public GraphBase {
                 delete pair.second;
         }
     }
+
+    size_t getT() { return T; }
 
     Node* importFrontend(const Expression* exp) {
         // hit and return
@@ -263,198 +264,48 @@ class Graph : public GraphBase {
         return false;
     }
 
-    bool eliminateTailingNode(Node* node) {
-        if (node->getValidOutDegrees()) return false;
-        if (node->party->is_corrupted()) return false;
-        node->markEliminated();
-        for (auto edge : node->getInputs()) {
-            edge->markEliminated();
-            for (auto nd : edge->getInputs()) {
-                nd->markPotential();
-            }
-        }
-        transformTape.push_back(std::make_pair(node, TAIL_NODE));
-        return true;
-    }
-
-    bool eliminateTailingEdge(Node* node) {
-        if (node->getValidOutDegrees()) return false;
-        if (node->getValidInDegrees() <= 1) return false;
-        if (node->party->is_corrupted()) return false;
-        Operation* kept_edge = nullptr;
-        for (auto edge : node->getInputs()) {
-            if (edge->isGenerated()) {
-                // keep one of the generated edges
-                kept_edge = edge;
-                break;
-            }
-        }
-        if (kept_edge == nullptr) return false;
-
-        for (auto edge : node->getInputs()) {
-            if (edge == kept_edge || edge->isEliminated()) continue;
-            edge->markEliminated();
-            for (auto nd : edge->getInputs()) {
-                nd->markPotential();
-            }
-        }
-
-        assert(node->state == Node::BUBBLE);
-        node->state = Node::VISITED;
-
-        transformTape.push_back(std::make_pair(node, TAIL_EDGE));
-        return true;
-    }
-
-    bool simulatePolynomial(Node* node) {
-        NodeVec srcs, dests;
-        srcs.push_back(node);
-        OpVec old_edges;
-        // FIXME: all edges are from the same polynomial is assumed
-        for (auto e : node->getOuputs()) {
-            if (!e->isEliminated() && !e->isGenerated() &&
-                e->getType() == Operator::EVAL) {
-                old_edges.push_back(e);
-                srcs.push_back(e->getOutput());
-            }
-        }
-        if (srcs.size() > T + 1) return false;
-        if (old_edges.empty()) return false;
-        for (auto d : srcs) {
-            if (d->isRandom()) return false;
-        }
-
-        for (auto e : old_edges) e->markEliminated();
-        for (auto v : old_edges.front()->getInputs())
-            if (v->isRandom()) {
-                if (srcs.size() < T + 1)
-                    srcs.push_back(v);
-                else
-                    dests.push_back(v);
-            }
-        for (auto v : srcs)
-            if (v != node) v->type = Node::RANDOM;
-        for (auto d : dests) {
-            if (d->isRandom()) d->type = Node::NONE;
-            auto edge = new Operation(Operator::EVAL, srcs, d);
-            edge->markGenerated();
-            for (auto v : srcs) v->addOutputOp(edge);
-            d->addInputOp(edge);
-            edges.push_back(edge);
-
-            if (!d->party->is_corrupted() && 1 < d->getValidInDegrees())
-                d->state = Node::BUBBLE;
-            else
-                d->markPotential();
-        }
-
-        transformTape.push_back(std::make_pair(node, SIM_POLY));
-        return true;
-    }
-
-    bool reverseReconstruct(Node* node) {
-        if (node->getValidInDegrees() != 1) return false;
-        Operation* edge = node->firstValidInput();
-        if (edge->getType() != Operator::RECONSTRUCT) return false;
-        // avoid loop
-        if (edge->isGenerated()) return false;
-        // check reconstruct operator
-        NodeVec corruptedNodes;
-        NodeVec uncorruptedNodes;
-        if (node->party->is_corrupted()) {
-            corruptedNodes.push_back(node);
-        } else {
-            uncorruptedNodes.push_back(node);
-        }
-        for (auto nd : edge->getInputs()) {
-            if (nodeFromHonest(nd)) {
-                uncorruptedNodes.push_back(nd);
-            } else {
-                corruptedNodes.push_back(nd);
-            };
-        }
-        if (corruptedNodes.size() <= T) return false;
-
-        // reverse connections
-        edge->markEliminated();
-
-        for (auto uncor_nd : uncorruptedNodes) {
-            Operation* new_edge =
-                new Operation(Operator::RECONSTRUCT, corruptedNodes, uncor_nd);
-            new_edge->markGenerated();
-            edges.push_back(new_edge);
-
-            uncor_nd->addInputOp(new_edge);
-            for (auto cor_nd : corruptedNodes) {
-                cor_nd->addOutputOp(new_edge);
-            }
-        }
-
-        // update bubbles
-        for (auto uncor_nd : uncorruptedNodes) {
-            if (!uncor_nd->party->is_corrupted() &&
-                1 < uncor_nd->getValidInDegrees())
-                uncor_nd->state = Node::BUBBLE;
-            else
-                uncor_nd->markPotential();
-        }
-
-        transformTape.push_back(std::make_pair(node, REVERSE_RECONSTRUCT));
-        return true;
-    }
-
-    bool reverseTransit(Node* node) {
-        if (node->getValidInDegrees() <= 1) return false;
-        Operation* edge = nullptr;
-        for (auto e : node->getInputs()) {
-            if (!e->isEliminated() && !e->isGenerated() &&
-                e->getType() == Operator::TRANSFER) {
-                edge = e;
-                break;
-            }
-        }
-        if (edge == nullptr) return false;
-        Node* src_node = edge->getInputs().front();
-
-        // reverse connections
-        edge->markEliminated();
-        Operation* new_edge =
-            new Operation(Operator::TRANSFER, {node}, src_node);
-        new_edge->markGenerated();
-        edges.push_back(new_edge);
-        src_node->addInputOp(new_edge);
-        node->addOutputOp(new_edge);
-
-        // update bubbles
-        if (!src_node->party->is_corrupted()) {
-            if (1 < src_node->getValidInDegrees())
-                src_node->state = Node::BUBBLE;
-            else
-                src_node->markPotential();
-        }
-
-        transformTape.push_back(std::make_pair(node, REVERSE_TRANSIT));
-        return true;
-    }
-
-    bool tryProving() {
-        while (hasBubble()) {
-            bool hasChange = false;
-            for (auto node : nodes) {
-                if (node->state == Node::POTENTIAL ||
-                    node->state == Node::BUBBLE) {
-                    if (eliminateTailingNode(node) ||
-                        eliminateTailingEdge(node) ||
-                        simulatePolynomial(node) || reverseReconstruct(node) ||
-                        reverseTransit(node)) {
-                        hasChange = true;
-                        break;
+    std::string getHashString() {
+        std::string hashstring_graph;
+        // edge
+        hashstring_graph += "EDGE";
+        std::vector<std::string> string_edges;
+        for (auto edge : edges) {
+            if (!edge->isEliminated()) {
+                std::string hashstring_edge;
+                std::vector<std::string> string_inputs, string_outputs;
+                for (auto input : edge->getInputs()) {
+                    if (!input->isEliminated()) {
+                        string_inputs.push_back(input->name);
                     }
                 }
+                if (!edge->getOutput()->isEliminated()) {
+                    string_outputs.push_back(edge->getOutput()->name);
+                }
+                std::sort(string_inputs.begin(), string_inputs.end());
+                std::sort(string_outputs.begin(), string_outputs.end());
+                std::string hashstring_input = "_INPUT_", hashstring_output = "_OUTPUT_";
+                for (auto string_input : string_inputs) {
+                    hashstring_input += string_input;
+                }
+                for (auto string_output : string_outputs) {
+                    hashstring_output += string_output;
+                }
+                hashstring_edge = hashstring_input + hashstring_output + std::to_string(static_cast<unsigned int>(edge->getType()));
+                string_edges.push_back(hashstring_edge);
             }
-            if (!hasChange) break;
         }
-        return !hasBubble();
+        std::sort(string_edges.begin(), string_edges.end());
+        for (auto string_edge : string_edges) {
+            hashstring_graph += string_edge;
+        }
+        // node
+        hashstring_graph += "_NODE_";
+        for (auto node : nodes) {
+            if (!node->isEliminated()) {
+                hashstring_graph += node->name;
+            }
+        }
+        return hashstring_graph;
     }
 };
 
@@ -464,5 +315,195 @@ class SubGraph : public GraphBase {
     SubGraph(NodeVec nodes) : GraphBase(nodes) {}
     SubGraph(const SubGraph& rhs) : SubGraph(rhs.nodes) {}
 };
+
+bool eliminateTailingNode(Graph* g, Node* node) {    
+    if (node->getValidOutDegrees()) return false;
+    if (node->party->is_corrupted()) return false;
+    node->markEliminated();
+    for (auto edge : node->getInputs()) {
+        edge->markEliminated();
+        for (auto nd : edge->getInputs()) {
+            nd->markPotential();
+        }
+    }
+    g->transformTape.push_back(std::make_pair(node, Graph::TAIL_NODE));
+    return true;
+}
+
+bool simulatePolynomial(Graph* g, Node* node) {
+    NodeVec srcs, dests;
+    srcs.push_back(node);
+    OpVec old_edges;
+    // FIXME: all edges are from the same polynomial is assumed
+    for (auto e : node->getOuputs()) {
+        if (!e->isEliminated() && !e->isGenerated() &&
+            e->getType() == Operator::EVAL) {
+            old_edges.push_back(e);
+            srcs.push_back(e->getOutput());
+        }
+    }
+    if (srcs.size() > g->getT() + 1) return false;
+    if (old_edges.empty()) return false;
+    for (auto d : srcs) {
+        if (d->isRandom()) return false;
+    }
+
+    for (auto e : old_edges) e->markEliminated();
+    for (auto v : old_edges.front()->getInputs())
+        if (v->isRandom()) {
+            if (srcs.size() < g->getT() + 1)
+                srcs.push_back(v);
+            else
+                dests.push_back(v);
+        }
+    for (auto v : srcs)
+        if (v != node) v->type = Node::RANDOM;
+    for (auto d : dests) {
+        if (d->isRandom()) d->type = Node::NONE;
+        auto edge = new Operation(Operator::EVAL, srcs, d);
+        edge->markGenerated();
+        for (auto v : srcs) v->addOutputOp(edge);
+        d->addInputOp(edge);
+        g->edges.push_back(edge);
+
+        if (!d->party->is_corrupted() && 1 < d->getValidInDegrees())
+            d->state = Node::BUBBLE;
+        else
+            d->markPotential();
+    }
+
+    g->transformTape.push_back(std::make_pair(node, Graph::SIM_POLY));
+    return true;
+}
+
+bool reverseReconstruct(Graph* g, Node* node) {
+    if (node->getValidInDegrees() != 1) return false;
+    Operation* edge = node->firstValidInput();
+    if (edge->getType() != Operator::RECONSTRUCT) return false;
+    // avoid loop
+    if (edge->isGenerated()) return false;
+    // check reconstruct operator
+    NodeVec corruptedNodes;
+    NodeVec uncorruptedNodes;
+    if (node->party->is_corrupted()) {
+        corruptedNodes.push_back(node);
+    } else {
+        uncorruptedNodes.push_back(node);
+    }
+    for (auto nd : edge->getInputs()) {
+        if (g->nodeFromHonest(nd)) {
+            uncorruptedNodes.push_back(nd);
+        } else {
+            corruptedNodes.push_back(nd);
+        };
+    }
+    if (corruptedNodes.size() <= g->getT()) return false;
+
+    // reverse connections
+    edge->markEliminated();
+
+    for (auto uncor_nd : uncorruptedNodes) {
+        Operation* new_edge =
+            new Operation(Operator::RECONSTRUCT, corruptedNodes, uncor_nd);
+        new_edge->markGenerated();
+        g->edges.push_back(new_edge);
+
+        uncor_nd->addInputOp(new_edge);
+        for (auto cor_nd : corruptedNodes) {
+            cor_nd->addOutputOp(new_edge);
+        }
+    }
+    // update bubbles
+    for (auto uncor_nd : uncorruptedNodes) {
+        if (!uncor_nd->party->is_corrupted() &&
+            1 < uncor_nd->getValidInDegrees())
+            uncor_nd->state = Node::BUBBLE;
+        else
+            uncor_nd->markPotential();
+    }
+
+    g->transformTape.push_back(std::make_pair(node, Graph::REVERSE_RECONSTRUCT));
+    return true;
+}
+
+bool reverseTransit(Graph* g, Node* node) {
+    if (node->getValidInDegrees() <= 1) return false;
+    Operation* edge = nullptr;
+    for (auto e : node->getInputs()) {
+        if (!e->isEliminated() && !e->isGenerated() &&
+            e->getType() == Operator::TRANSFER) {
+            edge = e;
+            break;
+        }
+    }
+    if (edge == nullptr) return false;
+    Node* src_node = edge->getInputs().front();
+
+    // reverse connections
+    edge->markEliminated();
+    Operation* new_edge =
+        new Operation(Operator::TRANSFER, {node}, src_node);
+    new_edge->markGenerated();
+    g->edges.push_back(new_edge);
+    src_node->addInputOp(new_edge);
+    node->addOutputOp(new_edge);
+
+    // update bubbles
+    if (!src_node->party->is_corrupted()) {
+        if (1 < src_node->getValidInDegrees())
+            src_node->state = Node::BUBBLE;
+        else
+            src_node->markPotential();
+    }
+
+    g->transformTape.push_back(std::make_pair(node, Graph::REVERSE_TRANSIT));
+    return true;
+}
+
+bool tryProving(Graph* g, GraphVec& histories) {
+    if (!g->hasBubble()) {
+        return true;
+    }
+
+    // for (auto history : histories) {
+    //     if (history->getHashString() == g->getHashString()) {
+    //         return false;
+    //     }
+    // }
+    
+    histories.push_back(g);
+    Graph *new_g = new Graph;
+    *new_g = *g;
+
+    for (auto node : new_g->nodes) {
+        if (node->state == Node::POTENTIAL || node->state == Node::BUBBLE) {
+            if (eliminateTailingNode(new_g, node)) {
+                std::cout << "1" << std::endl;
+                if (tryProving(new_g, histories)) {
+                    return true;
+                }                        
+            }
+            if (simulatePolynomial(new_g, node)) {
+                std::cout << "2" << std::endl;
+                if (tryProving(new_g, histories)) {
+                    return true;
+                }                        
+            }
+            if (reverseReconstruct(new_g, node)) {
+                std::cout << "3" << std::endl;
+                if (tryProving(new_g, histories)) {
+                    return true;
+                }                           
+            }
+            if (reverseTransit(new_g, node)) {
+                std::cout << "4" << std::endl;
+                if (tryProving(new_g, histories)) {
+                    return true;
+                }                             
+            }
+        }
+    }
+    return false;
+}
 
 }  // end of namespace mpc

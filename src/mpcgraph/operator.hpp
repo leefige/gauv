@@ -6,21 +6,21 @@ namespace mpc {
 
 class Expression;
 
-enum class Operator {
-    NONE,
+enum class Operator : unsigned int {
+    NONE = 0,
 
-    INPUT,
-    TRANSFER,
+    INPUT = 100,
+    TRANSFER = 101,
 
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    SCALARMUL,
+    ADD = 200,
+    SUB = 201,
+    MUL = 202,
+    DIV = 203,
+    SCALARMUL = 204,
 
-    EVAL,
-    RECONSTRUCT,
-    POLILIZE,
+    EVAL = 300,
+    RECONSTRUCT = 301,
+    POLILIZE = 302,
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Operator& op)
