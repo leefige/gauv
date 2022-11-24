@@ -111,7 +111,7 @@ class Constant : public Placeholder {
     static Constant zero;
     static Constant build_constant(Context& ctx, std::string val) {
         std::stringstream cs;
-        cs << "_const_" << val;
+        cs << "const_" << val;
         return Constant(ctx, cs.str());
     }
 

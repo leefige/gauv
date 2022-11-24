@@ -62,6 +62,8 @@ class Operation {
 
     std::string to_string() const;
 
+    void* payload = nullptr;
+
    private:
     const size_t guid;
     uint64_t hash;

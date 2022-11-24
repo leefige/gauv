@@ -147,6 +147,15 @@ public:
         return *ret; 
     }
 
+    friend Share& operator*(Constant& c, Share& b)
+    {
+        return b.scalarMul(c);
+    }
+    friend Share& operator*(Share& a, Constant& c)
+    {
+        return a.scalarMul(c);
+    }
+
     Share& transfer(const PartyDecl& party)
     {
         if (_party == party) {

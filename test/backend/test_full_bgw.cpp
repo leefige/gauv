@@ -9,8 +9,9 @@
 using namespace mpc;
 using namespace std;
 
-void test_linear_bgw(size_t I, size_t T) {
-    // a + b + 2 * c
+void test_full_bgw(int cor) {
+    // a * b + 2 * c
+    constexpr size_t T = 1;
     constexpr size_t N = 3;
     Context& ctx = Context::get_context();
 
@@ -22,7 +23,7 @@ void test_linear_bgw(size_t I, size_t T) {
         parties.push_back(party);
         secrets.push_back(secret);
     }
-    for (int i = 0; i < I; i++) parties[i]->set_corrupted();
+    parties[cor]->set_corrupted();
 
     std::vector<std::vector<Share*>> transfers;
     transfers.resize(parties.size());
@@ -46,11 +47,31 @@ void test_linear_bgw(size_t I, size_t T) {
     Graph graph;
     std::vector<Share*> deltas;
     std::vector<Expression*> deltas_transferred;
-    auto c = Constant::build_constant(ctx, "2");
-    for (int i = 0; i < parties.size(); i++) {
-        auto recv_queue = transfers[i];
-        deltas.push_back(
-            &(*recv_queue[0] + *recv_queue[1] + c * *recv_queue[2]));
+    auto c = Constant::build_constant(ctx, std::to_string(2));
+    auto lambda_1 = Constant::build_constant(ctx, "lambda_1");
+    auto lambda_2 = Constant::build_constant(ctx, "lambda_2");
+    auto lambda_3 = Constant::build_constant(ctx, "lambda_3");
+    for (int i = 0; i < N; i++) {
+        auto& partial_mul = *(transfers[i][0]) * *(transfers[i][1]);
+        auto& q_i_x = Poly::gen_poly(ctx, *parties[i], partial_mul, T);
+        for (int j = 0; j < N; j++) {
+            auto& s_i_j = q_i_x.eval(*parties[j]);
+            if (i == j) {
+                transfers[j].push_back(&s_i_j);
+            } else {
+                transfers[j].push_back(&s_i_j.transfer(*parties[j]));
+                cout << parties[i]->name() << " sends to " << parties[j]->name()
+                     << ": " << s_i_j.name() << endl;
+            }
+        }
+    }
+    for (int i = 0; i < N; i++) {
+        auto& mul_delta_1 = lambda_1 * *transfers[i][3];
+        auto& mul_delta_2 = lambda_2 * *transfers[i][4];
+        auto& mul_delta_3 = lambda_3 * *transfers[i][5];
+        auto& partial_sum = mul_delta_1 + mul_delta_2 + mul_delta_3;
+        auto& delta_i = partial_sum + c * *transfers[i][2];
+        deltas.push_back(&delta_i);
     }
     // output sharing
     for (int i = 0; i < parties.size(); i++) {
@@ -92,15 +113,14 @@ void test_linear_bgw(size_t I, size_t T) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 1 && argc != 3) {
-        cout << "Usage: " << argv[0] << " I T" << endl;
+    if (argc != 1 && argc != 2) {
+        cout << "Usage: " << argv[0] << " corrupted_party" << endl;
         return 0;
     }
-    int I = 1, T = 1;
-    if (argc == 3) {
-        I = atoi(argv[1]);
-        T = atoi(argv[2]);
+    int cor = 0;
+    if (argc == 2) {
+        cor = atoi(argv[1]);
     }
-    test_linear_bgw(I, T);
+    test_full_bgw(cor);
     return 0;
 }

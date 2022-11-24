@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../mpcgraph/expression.hpp"
 #include "node.hpp"
 #include "operation.hpp"
 
@@ -30,7 +31,12 @@ Operation* Node::firstValidOutput() const {
 }
 std::string Operation::to_string() const {
     std::stringstream ss;
-    ss << "<operation[" << type << "] ";
+    ss << "<operation[" << type;
+    if (type == Operator::SCALARMUL) {
+        auto c = (Constant*)(payload);
+        ss << " " << c->name();
+    }
+    ss << "] ";
     if (inputs.size()) {
         ss << inputs[0]->getName();
     }

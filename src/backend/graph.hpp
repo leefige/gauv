@@ -261,7 +261,10 @@ class Graph : public GraphBase {
                 operation = new Operation(exp->cequation().op());
                 for (auto oprand : exp->cequation().coprands()) {
                     // skip constant
-                    if (dynamic_cast<const Constant*>(oprand)) continue;
+                    if (dynamic_cast<const Constant*>(oprand)) {
+                        operation->payload = oprand;
+                        continue;
+                    }
                     auto tmp_node = importFrontend(oprand);
                     operation->addInput(tmp_node);
                     tmp_node->addOutputOp(operation);
@@ -462,6 +465,7 @@ class Graph : public GraphBase {
     }
 
     bool simulatePolynomial(Node* node) {
+        if (node->party->is_corrupted()) return false;
         NodeVec srcs, dests;
         srcs.push_back(node);
         OpVec old_edges;
