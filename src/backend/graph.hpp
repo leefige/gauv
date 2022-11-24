@@ -478,25 +478,21 @@ bool tryProving(Graph* g, GraphVec& histories) {
     for (auto node : new_g->nodes) {
         if (node->state == Node::POTENTIAL || node->state == Node::BUBBLE) {
             if (eliminateTailingNode(new_g, node)) {
-                std::cout << "1" << std::endl;
                 if (tryProving(new_g, histories)) {
                     return true;
                 }                        
             }
             if (simulatePolynomial(new_g, node)) {
-                std::cout << "2" << std::endl;
                 if (tryProving(new_g, histories)) {
                     return true;
                 }                        
             }
             if (reverseReconstruct(new_g, node)) {
-                std::cout << "3" << std::endl;
                 if (tryProving(new_g, histories)) {
                     return true;
                 }                           
             }
             if (reverseTransit(new_g, node)) {
-                std::cout << "4" << std::endl;
                 if (tryProving(new_g, histories)) {
                     return true;
                 }                             
