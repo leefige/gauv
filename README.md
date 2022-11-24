@@ -1,5 +1,7 @@
 # MPC verifier
 
+Please refer to [BGW test readme](test/bgw/README.md).
+
 **Following contents are out-dated!**
 
 ~~This project contains two major components:~~
