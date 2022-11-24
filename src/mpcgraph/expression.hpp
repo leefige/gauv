@@ -1,12 +1,12 @@
 #pragma once
 
+#include <initializer_list>
+#include <memory>
+#include <vector>
+
 #include "context.hpp"
 #include "operator.hpp"
 #include "partydecl.hpp"
-
-#include <initializer_list>
-#include <vector>
-#include <memory>
 
 namespace mpc {
 
@@ -19,14 +19,14 @@ class Equation {
     // Equation& operator=(const Equation&) = delete;
     // Equation& operator=(Equation&&) = delete;
 
-public:
+   public:
     std::vector<void*> params;
 
     static const Equation nulleqn;
 
     // TODO: ensure oprands in the same context
     explicit Equation(const Operator& op,
-        const std::vector<Expression*>& oprands) noexcept
+                      const std::vector<Expression*>& oprands) noexcept
         : _op(op), _oprands(oprands) {}
 
     explicit operator bool() const noexcept { return this != &nulleqn; }
@@ -43,16 +43,15 @@ class Expression {
     std::string _name;
     Equation _eqn;
 
-protected:
-
+   protected:
     explicit Expression(Context& context, const std::string& name,
-        const Equation& eqn) noexcept
+                        const Equation& eqn) noexcept
         : _ctx(context), _name(name), _eqn(eqn) {}
 
     explicit Expression(Context& context, const std::string& name) noexcept
         : Expression(context, name, Equation::nulleqn) {}
 
-public:
+   public:
     virtual ~Expression() {}
 
     virtual std::string to_string() const = 0;
@@ -64,30 +63,27 @@ public:
     Equation& equation() { return _eqn; }
     const Equation& cequation() const { return _eqn; }
 
-    friend std::ostream& operator<<(std::ostream& o, const Expression& p)
-    {
+    friend std::ostream& operator<<(std::ostream& o, const Expression& p) {
         return o << p.to_string();
     }
 };
 
 class Literal : public Expression {
-protected:
+   protected:
     explicit Literal(Context& context, const std::string& name) noexcept
         : Expression(context, name, Equation(Operator::INPUT, {})) {}
 
-public:
+   public:
     virtual ~Literal() {}
 };
 
 class Placeholder : public Expression {
-protected:
-
+   protected:
     explicit Placeholder(Context& context, const std::string& name) noexcept
         : Expression(context, name, Equation(Operator::INPUT, {})) {}
 
-public:
+   public:
     virtual ~Placeholder() {}
-
 };
 
 class Constant : public Placeholder {
@@ -96,7 +92,7 @@ class Constant : public Placeholder {
     Constant& operator=(const Constant&) = delete;
     Constant& operator=(Constant&&) = delete;
 
-public:
+   public:
     /**
      * @brief Construct a placeholder for a constant.
      *
@@ -106,19 +102,22 @@ public:
      * registered in this context.
      */
     explicit Constant(Context& context, const std::string& name)
-            : Placeholder(context, name)
-    {
+        : Placeholder(context, name) {
         if (!context.register_constant(name, *this)) {
             throw var_redefinition(name);
         }
     }
 
     static Constant zero;
+    static Constant build_constant(Context& ctx, std::string val) {
+        std::stringstream cs;
+        cs << "_const_" << val;
+        return Constant(ctx, cs.str());
+    }
 
     virtual ~Constant() {}
 
-    virtual std::string to_string() const override
-    {
+    virtual std::string to_string() const override {
         std::stringstream ss;
         ss << "<const " << name() << ">";
         return ss.str();
@@ -135,7 +134,7 @@ class Secret : public Placeholder {
 
     const PartyDecl& _party;
 
-public:
+   public:
     /**
      * @brief Construct a new secret of some party.
      *
@@ -146,9 +145,8 @@ public:
      * registered in this context.
      */
     explicit Secret(Context& context, const std::string& name,
-            const PartyDecl& party)
-            : Placeholder(context, name), _party(party)
-    {
+                    const PartyDecl& party)
+        : Placeholder(context, name), _party(party) {
         if (!context.register_secret(name, *this)) {
             throw var_redefinition(name);
         }
@@ -163,8 +161,7 @@ public:
      */
     const PartyDecl& party() const { return _party; }
 
-    virtual std::string to_string() const override
-    {
+    virtual std::string to_string() const override {
         std::stringstream ss;
         ss << "<secret[" << _party.name() << "] " << name() << ">";
         return ss.str();

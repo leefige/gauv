@@ -9,8 +9,9 @@
 using namespace mpc;
 using namespace std;
 
-void test_bgw_add(size_t I, size_t T, size_t N, int verbose = 1) {
-    // just add everything together, easily scalable
+void test_linear_bgw(size_t I, size_t T) {
+    // a + b + 2 * c
+    constexpr size_t N = 3;
     Context& ctx = Context::get_context();
 
     std::vector<PartyDecl*> parties;
@@ -25,6 +26,7 @@ void test_bgw_add(size_t I, size_t T, size_t N, int verbose = 1) {
 
     std::vector<std::vector<Share*>> transfers;
     transfers.resize(parties.size());
+
     // input sharing
     for (int i = 0; i < parties.size(); i++) {
         auto& q_i_x = Poly::gen_poly(ctx, *parties[i], *secrets[i], T);
@@ -32,29 +34,23 @@ void test_bgw_add(size_t I, size_t T, size_t N, int verbose = 1) {
             auto& s_i_j = q_i_x.eval(*parties[j]);
             if (i != j) {
                 transfers[j].push_back(&s_i_j.transfer(*parties[j]));
-                if (verbose >= 3)
-                    cout << parties[i]->name() << " sends to "
-                         << parties[j]->name() << ": " << s_i_j.name() << endl;
+                cout << parties[i]->name() << " sends to " << parties[j]->name()
+                     << ": " << s_i_j.name() << endl;
             } else {
                 transfers[j].push_back(&s_i_j);
             }
         }
     }
-    if (verbose >= 3) cout << endl;
+    cout << endl;
 
     Graph graph;
     std::vector<Share*> deltas;
     std::vector<Expression*> deltas_transferred;
+    auto c = Constant::build_constant(ctx, "2");
     for (int i = 0; i < parties.size(); i++) {
         auto recv_queue = transfers[i];
-        Share* delta_i = recv_queue.back();
-        recv_queue.pop_back();
-        while (recv_queue.size() > 0) {
-            auto& partial_sum = *delta_i + *(recv_queue.back());
-            recv_queue.pop_back();
-            delta_i = &partial_sum;
-        }
-        deltas.push_back(delta_i);
+        deltas.push_back(
+            &(*recv_queue[0] + *recv_queue[1] + recv_queue[2]->scalarMul(c)));
     }
     // output sharing
     for (int i = 0; i < parties.size(); i++) {
@@ -67,7 +63,7 @@ void test_bgw_add(size_t I, size_t T, size_t N, int verbose = 1) {
         }
         Share* subgraph_i =
             &Share::reconstruct(deltas_transferred, *parties[i]);
-        if (verbose >= 3 && i == 0)
+        if (i == 0)
             cout << parties[i]->name() << " yield subgraph: " << *subgraph_i
                  << endl;
         graph.importFrontend(subgraph_i);
@@ -78,19 +74,17 @@ void test_bgw_add(size_t I, size_t T, size_t N, int verbose = 1) {
          << graph.edgeSize() << " edges" << endl;
     cout << "Initial potential: " << Graph::to_string(graph.potential())
          << endl;
-    if (verbose >= 3) cout << endl << "Initial graph:" << endl << graph << endl;
+    cout << endl << "Initial graph:" << endl << graph << endl;
     bool proved = graph.tryProvingByPotential();
     cout << endl << "Proved? " << std::boolalpha << proved << endl;
     cout << "Final graph has " << graph.nodeSize() << " nodes, "
          << graph.edgeSize() << " edges" << endl;
     cout << "Final potential: " << Graph::to_string(graph.potential()) << endl;
-    if (verbose >= 3) cout << "Final graph:" << endl << graph << endl;
-    if (verbose >= 2) {
-        cout << endl << "Transform history:" << endl;
-        for (auto& entry : graph.transformTape) {
-            cout << entry.node->getName() << " " << Graph::to_string(entry.type)
-                 << " " << Graph::to_string(entry.potential) << endl;
-        }
+    cout << "Final graph:" << endl << graph << endl;
+    cout << endl << "Transform history:" << endl;
+    for (auto& entry : graph.transformTape) {
+        cout << entry.node->getName() << " " << Graph::to_string(entry.type)
+             << " " << Graph::to_string(entry.potential) << endl;
     }
 
     for (auto p : parties) delete p;
@@ -98,20 +92,15 @@ void test_bgw_add(size_t I, size_t T, size_t N, int verbose = 1) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc <= 3) {
-        cout << "Usage: " << argv[0] << " I T N" << endl;
+    if (argc != 1 && argc != 3) {
+        cout << "Usage: " << argv[0] << " I T" << endl;
         return 0;
     }
-    auto I = atoi(argv[1]);
-    auto T = atoi(argv[2]);
-    auto N = atoi(argv[3]);
-    int verbose;
-    if (N <= 3)
-        verbose = 3;
-    else if (N <= 5)
-        verbose = 2;
-    else
-        verbose = 1;
-    test_bgw_add(I, T, N, verbose);
+    int I = 1, T = 1;
+    if (argc == 3) {
+        I = atoi(argv[1]);
+        T = atoi(argv[2]);
+    }
+    test_linear_bgw(I, T);
     return 0;
 }
