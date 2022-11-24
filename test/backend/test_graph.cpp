@@ -42,10 +42,9 @@ using namespace std;
                         <poly{1}[p1][x1] poly_1>)>)>)>,
             <share[p2] share_4=TRANSFER(
                 <share[p0] share_3=EVAL(
-                    <poly{1}[p0][x0] poly_0>)>)>)>)>)> 
+                    <poly{1}[p0][x0] poly_0>)>)>)>)>)>
  */
-void test_graph_bgw()
-{
+void test_graph_bgw() {
     Context& ctx = Context::get_context();
 
     constexpr const size_t SEC = 1;
@@ -67,17 +66,23 @@ void test_graph_bgw()
     for (int i = 0; i < parties.size(); i++) {
         auto& q_i_x = Poly::gen_poly(ctx, *parties[i], *secrets[i], SEC);
         for (int j = 0; j < parties.size(); j++) {
-            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(*parties[j]);
-            transfers[j].push_back(&s_i_j);
-            cout << parties[i]->name() << " sends to " << parties[j]->name()
-                 << ": " << s_i_j << endl;
+            auto& _s_i_j = q_i_x.eval(*parties[j]);
+            if (i != j) {
+                auto& s_i_j = _s_i_j.transfer(*parties[j]);
+                transfers[j].push_back(&s_i_j);
+                cout << parties[i]->name() << " sends to " << parties[j]->name()
+                     << ": " << s_i_j.name() << endl;
+            } else {
+                transfers[j].push_back(&_s_i_j);
+            }
         }
     }
 
     cout << endl;
 
     Graph graph;
-    std::vector<Expression*> deltas;
+    std::vector<Share*> deltas;
+    std::vector<Expression*> deltas_transferred;
     for (int i = 0; i < parties.size(); i++) {
         auto recv_queue = transfers[i];
         Share* delta_i = recv_queue.back();
@@ -87,32 +92,40 @@ void test_graph_bgw()
             recv_queue.pop_back();
             delta_i = &partial_sum;
         }
-        deltas.push_back(&(delta_i->transfer(*parties[0])));
+        deltas.push_back(delta_i);
     }
     for (int i = 0; i < parties.size(); i++) {
-        Share* subgraph_i = &Share::reconstruct(deltas, *parties[i]);
-        cout << parties[i]->name() << " yield subgraph: " << *subgraph_i
-             << endl;
+        deltas_transferred.clear();
+        for (int j = 0; j < parties.size(); j++) {
+            if (i == j)
+                deltas_transferred.push_back(deltas[j]);
+            else
+                deltas_transferred.push_back(&deltas[j]->transfer(*parties[i]));
+        }
+        Share* subgraph_i =
+            &Share::reconstruct(deltas_transferred, *parties[i]);
+        if (i == 0)
+            cout << parties[i]->name() << " yield subgraph: " << *subgraph_i
+                 << endl;
         graph.importFrontend(subgraph_i);
     }
     graph.initOutputNodes();
     graph.initSearchState();
     cout << endl << "Init graph:" << endl << graph << endl;
-    bool proved = graph.tryProving();
+    bool proved = graph.tryProvingByPotential();
     cout << endl << "Proved? " << std::boolalpha << proved << endl;
     cout << "Result graph:" << endl << graph << endl;
     cout << endl << "Transform history:" << endl;
-    for (auto& pair : graph.transformTape) {
-        cout << pair.first->getName() << " " << Graph::to_string(pair.second)
-             << endl;
+    for (auto& entry : graph.transformTape) {
+        cout << entry.node->getName() << " " << Graph::to_string(entry.type)
+             << " " << Graph::to_string(entry.potential) << endl;
     }
 
     for (auto p : parties) delete p;
     for (auto s : secrets) delete s;
 }
 
-int main()
-{
+int main() {
     test_graph_bgw();
     return 0;
 }
