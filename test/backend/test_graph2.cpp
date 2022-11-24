@@ -133,7 +133,7 @@ void test_graph_bgw()
     cout << endl << "Init graph:" << endl << graph << endl;
 
     GraphVec histories;
-    bool proved = tryProving(&graph, histories);
+    bool proved = graph.tryProving(histories);
     cout << endl << "Proved? " << std::boolalpha << proved << endl;
     cout << "Result graph:" << endl << graph << endl;
     cout << endl << "Transform history:" << endl;

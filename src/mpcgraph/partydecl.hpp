@@ -59,6 +59,7 @@ class PartyDecl {
     }
 
     bool is_corrupted() const { return _corrupted; }
+    bool is_honest() const { return !_corrupted; }
     void set_corrupted() { _corrupted = true; }
     void set_honest() { _corrupted = false; }
 
