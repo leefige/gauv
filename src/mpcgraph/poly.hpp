@@ -43,7 +43,7 @@ public:
         // std::cout << "~Poly " << name() << " released" << std::endl;
     }
 
-    static Poly& gen_poly(Context& context, PartyDecl& party,
+    static Poly& gen_poly(Context& context, const PartyDecl& party,
             Expression& C, size_t degree)
     {
         size_t num = context.n_poly();

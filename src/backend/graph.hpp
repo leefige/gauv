@@ -355,6 +355,12 @@ class Graph : public GraphBase {
             if (edge->state != Operation::ELIMINATED)
                 validEdges.push_back(edge);
         }
+        std::sort(validNodes.begin(), validNodes.end(),
+                  [](Node* l, Node* r) { return l->name < r->name; });
+        std::sort(validEdges.begin(), validEdges.end(),
+                  [](Operation* l, Operation* r) {
+                      return l->getOutput()->name < r->getOutput()->name;
+                  });
         if (validNodes.size()) {
             o << validNodes[0]->to_string();
         }
