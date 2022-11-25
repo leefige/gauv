@@ -25,7 +25,9 @@ class Operation {
           inputs(inputs),
           output(output) {}
     Operation(const Operation& rhs)
-        : guid(generateGuid()),
+        : state(rhs.state),
+          payload(rhs.payload),
+          guid(generateGuid()),
           hash(rhs.hash),
           type(rhs.type),
           inputs(rhs.inputs),

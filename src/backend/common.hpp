@@ -12,7 +12,6 @@ class Graph;
 
 using NodeVec = std::vector<Node *>;
 using OpVec = std::vector<Operation *>;
-using GraphVec = std::vector<Graph *>;
 
 inline size_t generateGuid() {
     static size_t guid = 0;

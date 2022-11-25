@@ -21,6 +21,70 @@ class GraphBase {
 
     GraphBase() {}
     GraphBase(NodeVec nodes) : nodes(nodes) {}
+    GraphBase(const GraphBase& g) {
+        // std::cout << 0 << std::endl;
+        // copy
+        for (auto node : g.nodes) {
+            Node *n = new Node(*node);
+            nodes.push_back(n);
+        }
+        for (auto edge : g.edges) {
+            Operation *e = new Operation(*edge);
+            edges.push_back(e);
+        }
+        // reconstruct
+        // std::cout << 1 << std::endl;
+        for (int i = 0; i < g.nodes.size(); i++) {
+            nodes[i]->clear();
+            // addInputOp
+            for (auto input : g.nodes[i]->getInputs()) {
+                if (input != nullptr && !input->isEliminated()) {
+                    std::string str = input->to_string();
+                    auto it = std::find_if(edges.begin(), edges.end(), [str](const Operation* op) {
+                        return op->to_string() == str;
+                    });
+                    assert(it != edges.end());
+                    nodes[i]->addInputOp(edges[it - edges.begin()]);
+                }
+            }
+            // addOutputOp
+            for (auto output : g.nodes[i]->getOuputs()) {
+                if (output != nullptr && !output->isEliminated()) {
+                    std::string str = output->to_string();
+                    auto it = std::find_if(edges.begin(), edges.end(), [str](const Operation* op) {
+                        return op->to_string() == str;
+                    });
+                    assert(it != edges.end());
+                    nodes[i]->addOutputOp(edges[it - edges.begin()]);
+                }
+            }
+        }
+        // std::cout << 2 << std::endl;
+        for (int i = 0; i < g.edges.size(); i++) {
+            edges[i]->clear();
+            // addInput
+            for (auto input : g.edges[i]->getInputs()) {
+                if (input != nullptr && !input->isEliminated()) {
+                    std::string str = input->to_string();
+                    auto it = std::find_if(nodes.begin(), nodes.end(), [str](const Node* node) {
+                        return node->to_string() == str;
+                    });
+                    assert(it != nodes.end());
+                    edges[i]->addInput(nodes[it - nodes.begin()]);
+                }
+            }
+            if (g.edges[i]->getOutput() != nullptr &&
+                !g.edges[i]->getOutput()->isEliminated()) {
+                std::string str = g.edges[i]->getOutput()->to_string();
+                auto it = std::find_if(nodes.begin(), nodes.end(), [str](const Node* node) {
+                    return node->to_string() == str;
+                });
+                assert(it != nodes.end());
+                edges[i]->setOutput(nodes[it - nodes.begin()]);
+            }
+        }
+        // std::cout << 3 << std::endl;
+    }
     ~GraphBase() {
         for (auto v : nodes)
             if (v != nullptr) delete v;
@@ -414,15 +478,15 @@ class Graph : public GraphBase {
         hashstring_graph += "EDGE";
         std::vector<std::string> string_edges;
         for (auto edge : edges) {
-            if (!edge->isEliminated()) {
+            if (edge != nullptr && !edge->isEliminated()) {
                 std::string hashstring_edge;
                 std::vector<std::string> string_inputs, string_outputs;
                 for (auto input : edge->getInputs()) {
-                    if (!input->isEliminated()) {
+                    if (input != nullptr && !input->isEliminated()) {
                         string_inputs.push_back(input->name);
                     }
                 }
-                if (!edge->getOutput()->isEliminated()) {
+                if (edge->getOutput() != nullptr && !edge->getOutput()->isEliminated()) {
                     string_outputs.push_back(edge->getOutput()->name);
                 }
                 std::sort(string_inputs.begin(), string_inputs.end());
@@ -448,7 +512,7 @@ class Graph : public GraphBase {
         // node
         hashstring_graph += "_NODE_";
         for (auto node : nodes) {
-            if (!node->isEliminated()) {
+            if (node != nullptr && !node->isEliminated()) {
                 hashstring_graph += node->name;
             }
         }
@@ -674,45 +738,72 @@ class Graph : public GraphBase {
         return true;
     }
 
-    bool tryProving(GraphVec& histories) {
+    bool tryProving(std::vector<std::string> &histories) {
         if (!hasBubble()) {
             return true;
         }
 
-        // for (auto history : histories) {
-        //     if (history->getHashString() == g->getHashString()) {
-        //         return false;
-        //     }
-        // }
+        std::string hashString = getHashString();
+        for (auto history : histories) {
+            if (history == hashString) {
+                return false;
+            }
+        }
 
-        histories.push_back(this);
-        Graph* new_g = new Graph;
-        *new_g = *this;
+        histories.push_back(hashString);
 
-        for (auto node : new_g->nodes) {
-            if (node->state == Node::POTENTIAL || node->state == Node::BUBBLE) {
-                if (new_g->eliminateTailingNode(node)) {
-                    if (new_g->tryProving(histories)) {
-                        return true;
-                    }
-                }
-                if (new_g->simulatePolynomial(node)) {
-                    if (new_g->tryProving(histories)) {
-                        return true;
-                    }
-                }
-                if (new_g->reverseReconstruct(node)) {
-                    if (new_g->tryProving(histories)) {
-                        return true;
-                    }
-                }
-                if (new_g->reverseTransit(node)) {
-                    if (new_g->tryProving(histories)) {
+        for (int i = 0; i < nodes.size(); i++) {
+            if (nodes[i]->state == Node::POTENTIAL ||
+                nodes[i]->state == Node::BUBBLE) {
+                Graph* g_1 = new Graph(*this);
+                if (g_1->eliminateTailingNode(g_1->nodes[i])) {
+                    std::cout << "TAIL_NODE" << std::endl;
+                    if (g_1->tryProving(histories)) {
                         return true;
                     }
                 }
             }
         }
+
+        for (int i = 0; i < nodes.size(); i++) {
+            if (nodes[i]->state != Node::ELIMINATED) {
+                Graph* g_2 = new Graph(*this);
+                if (g_2->reverseOutputReconstruct(g_2->nodes[i])) {
+                    std::cout << "REVERSE_OUTPUT_RECONSTRUCT" << std::endl;
+                    if (g_2->tryProving(histories)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < nodes.size(); i++) {
+            if (nodes[i]->state != Node::ELIMINATED) {
+                Graph* g_3 = new Graph(*this);
+                if (g_3->simulatePolynomial(g_3->nodes[i])) {
+                    std::cout << "SIM_POLY" << std::endl;
+                    if (g_3->tryProving(histories)) {
+                        return true;
+                    }
+                }
+                Graph* g_4 = new Graph(*this);
+                if (g_4->reverseReconstruct(g_4->nodes[i])) {
+                    std::cout << "REVERSE_RECONSTRUCT" << std::endl;
+                    if (g_4->tryProving(histories)) {
+                        return true;
+                    }
+                }
+                Graph* g_5 = new Graph(*this);
+                if (g_5->reverseTransit(g_5->nodes[i])) {
+                    std::cout << "REVERSE_TRANSIT" << std::endl;
+                    if (g_5->tryProving(histories)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        std::cout << "GO_BACK" << std::endl;
         return false;
     }
 

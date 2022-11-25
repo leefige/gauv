@@ -61,7 +61,8 @@ class Node {
           isOutputOf(isOutputof),
           isInputOf(isInputof) {}
     Node(const Node& rhs)
-        : guid(generateGuid()),
+        : state(rhs.state),
+          guid(generateGuid()),
           hash(rhs.hash),
           name(rhs.name),
           party(rhs.party),
