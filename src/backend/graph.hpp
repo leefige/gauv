@@ -156,7 +156,7 @@ class Graph : public GraphBase {
         // init search
         constexpr uint8_t FLAG_VISITED = 1;
         constexpr uint8_t FLAG_HONEST_TARGET = 2;
-        constexpr uint8_t FLAG_CORRUPTED_TARGET = 4;
+        constexpr uint8_t FLAG_BUBBLE_TARGET = 4;
         int len = nodes.size();
         std::map<Node*, int> mapNodeIndex;
         uint8_t* flags = new uint8_t[len];
@@ -185,7 +185,7 @@ class Graph : public GraphBase {
                 for (auto v : e->getInputs()) q.push(mapNodeIndex[v]);
             }
         }
-        // from honest
+        // from bubble
         for (int i = 0; i < len; i++) {
             auto nd = nodes[i];
             mapNodeIndex[nd] = i;
@@ -193,7 +193,7 @@ class Graph : public GraphBase {
             if (nd->isEliminated()) {
                 flags[i] |= FLAG_VISITED;
             } else {
-                if (nd->party->is_honest()) q.push(i);
+                if (nd->state == Node::BUBBLE) q.push(i);
             }
         }
         // do search
@@ -202,8 +202,7 @@ class Graph : public GraphBase {
             q.pop();
             auto nd = nodes[i];
             if (nd->isEliminated() || (flags[i] & FLAG_VISITED)) continue;
-            flags[i] |= FLAG_VISITED;
-            if (nd->party->is_corrupted()) flags[i] |= FLAG_CORRUPTED_TARGET;
+            flags[i] |= FLAG_VISITED | FLAG_BUBBLE_TARGET;
             for (auto e : nd->getOuputs()) {
                 if (e->isEliminated()) continue;
                 q.push(mapNodeIndex[e->getOutput()]);
@@ -211,17 +210,17 @@ class Graph : public GraphBase {
         }
         // sum up result
         int numHonestNodes = 0;
-        int numCorruptedNodes = 0;
+        int numReachableNodes = 0;
         for (int i = 0; i < len; i++) {
             if (flags[i] & FLAG_HONEST_TARGET) {
                 numHonestNodes++;
             }
-            if (flags[i] & FLAG_CORRUPTED_TARGET) {
-                numCorruptedNodes++;
+            if (flags[i] & FLAG_BUBBLE_TARGET) {
+                numReachableNodes++;
             }
         }
         delete[] flags;
-        return Potential{numNodes, numHonestNodes, numCorruptedNodes};
+        return Potential{numNodes, numHonestNodes, numReachableNodes};
     }
 
     Node* importFrontend(const Expression* exp) {
