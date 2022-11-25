@@ -22,7 +22,6 @@ class GraphBase {
     GraphBase() {}
     GraphBase(NodeVec nodes) : nodes(nodes) {}
     GraphBase(const GraphBase& g) {
-        // std::cout << 0 << std::endl;
         // copy
         for (auto node : g.nodes) {
             Node *n = new Node(*node);
@@ -33,7 +32,6 @@ class GraphBase {
             edges.push_back(e);
         }
         // reconstruct
-        // std::cout << 1 << std::endl;
         for (int i = 0; i < g.nodes.size(); i++) {
             nodes[i]->clear();
             // addInputOp
@@ -59,7 +57,6 @@ class GraphBase {
                 }
             }
         }
-        // std::cout << 2 << std::endl;
         for (int i = 0; i < g.edges.size(); i++) {
             edges[i]->clear();
             // addInput
@@ -83,7 +80,6 @@ class GraphBase {
                 edges[i]->setOutput(nodes[it - nodes.begin()]);
             }
         }
-        // std::cout << 3 << std::endl;
     }
     ~GraphBase() {
         for (auto v : nodes)
