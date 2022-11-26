@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include "../../src/backend/builtin.hpp"
 
 using namespace mpc;
@@ -13,8 +15,11 @@ inline void prove_helper(Graph& graph, int verbose = 3) {
     cout << "Initial potential: " << Graph::to_string(graph.potential())
          << endl;
     if (verbose >= 3) cout << endl << "Initial graph:" << endl << graph << endl;
-    bool proved = graph.tryProvingByPotential();
+    auto begin_time = chrono::high_resolution_clock::now();
+    bool proved = graph.tryProvingByHint();
+    auto end_time = chrono::high_resolution_clock::now();
     cout << endl << "Proved? " << std::boolalpha << proved << endl;
+    cout << "Time: " << (end_time - begin_time).count() / 1e9 << endl;
     cout << "Final graph has " << graph.nodeSize() << " nodes, "
          << graph.edgeSize() << " edges" << endl;
     cout << "Final potential: " << Graph::to_string(graph.potential()) << endl;

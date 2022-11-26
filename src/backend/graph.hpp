@@ -24,11 +24,11 @@ class GraphBase {
     GraphBase(const GraphBase& g) {
         // copy
         for (auto node : g.nodes) {
-            Node *n = new Node(*node);
+            Node* n = new Node(*node);
             nodes.push_back(n);
         }
         for (auto edge : g.edges) {
-            Operation *e = new Operation(*edge);
+            Operation* e = new Operation(*edge);
             edges.push_back(e);
         }
         // reconstruct
@@ -38,9 +38,10 @@ class GraphBase {
             for (auto input : g.nodes[i]->getInputs()) {
                 if (input != nullptr && !input->isEliminated()) {
                     std::string str = input->to_string();
-                    auto it = std::find_if(edges.begin(), edges.end(), [str](const Operation* op) {
-                        return op->to_string() == str;
-                    });
+                    auto it = std::find_if(edges.begin(), edges.end(),
+                                           [str](const Operation* op) {
+                                               return op->to_string() == str;
+                                           });
                     assert(it != edges.end());
                     nodes[i]->addInputOp(edges[it - edges.begin()]);
                 }
@@ -49,9 +50,10 @@ class GraphBase {
             for (auto output : g.nodes[i]->getOuputs()) {
                 if (output != nullptr && !output->isEliminated()) {
                     std::string str = output->to_string();
-                    auto it = std::find_if(edges.begin(), edges.end(), [str](const Operation* op) {
-                        return op->to_string() == str;
-                    });
+                    auto it = std::find_if(edges.begin(), edges.end(),
+                                           [str](const Operation* op) {
+                                               return op->to_string() == str;
+                                           });
                     assert(it != edges.end());
                     nodes[i]->addOutputOp(edges[it - edges.begin()]);
                 }
@@ -63,9 +65,10 @@ class GraphBase {
             for (auto input : g.edges[i]->getInputs()) {
                 if (input != nullptr && !input->isEliminated()) {
                     std::string str = input->to_string();
-                    auto it = std::find_if(nodes.begin(), nodes.end(), [str](const Node* node) {
-                        return node->to_string() == str;
-                    });
+                    auto it = std::find_if(nodes.begin(), nodes.end(),
+                                           [str](const Node* node) {
+                                               return node->to_string() == str;
+                                           });
                     assert(it != nodes.end());
                     edges[i]->addInput(nodes[it - nodes.begin()]);
                 }
@@ -73,9 +76,10 @@ class GraphBase {
             if (g.edges[i]->getOutput() != nullptr &&
                 !g.edges[i]->getOutput()->isEliminated()) {
                 std::string str = g.edges[i]->getOutput()->to_string();
-                auto it = std::find_if(nodes.begin(), nodes.end(), [str](const Node* node) {
-                    return node->to_string() == str;
-                });
+                auto it = std::find_if(nodes.begin(), nodes.end(),
+                                       [str](const Node* node) {
+                                           return node->to_string() == str;
+                                       });
                 assert(it != nodes.end());
                 edges[i]->setOutput(nodes[it - nodes.begin()]);
             }
@@ -98,6 +102,8 @@ class Graph : public GraphBase {
     // polynomial degrees
     size_t T = 0;
     std::set<const PartyDecl*> srcParties;
+    std::set<Node*> searchSet, bubbleSet;
+    bool computePotential = false;
 
    public:
     enum TransformType {
@@ -211,6 +217,7 @@ class Graph : public GraphBase {
     }
 
     Potential potential() const {
+        if (!computePotential) return Potential{0, 0, 0};
         // first term
         int numNodes = nodeSize();
         // init search
@@ -219,7 +226,7 @@ class Graph : public GraphBase {
         constexpr uint8_t FLAG_BUBBLE_TARGET = 4;
         int len = nodes.size();
         std::map<Node*, int> mapNodeIndex;
-        uint8_t* flags = new uint8_t[len];
+        uint8_t* flags = nullptr;  // new uint8_t[len];
         std::queue<int> q;
         // from corrupted
         for (int i = 0; i < len; i++) {
@@ -448,8 +455,11 @@ class Graph : public GraphBase {
             if (nd->getInDegrees() == 0 && !nd->party->is_corrupted() &&
                 nd->type != Node::RANDOM) {
                 nd->state = Node::BUBBLE;
+                bubbleSet.insert(nd);
+                searchSet.insert(nd);
             } else if (nd->getOutDegrees() == 0) {
                 nd->state = Node::POTENTIAL;
+                searchSet.insert(nd);
             } else {
                 nd->state = Node::UNVISITED;
             }
@@ -462,8 +472,8 @@ class Graph : public GraphBase {
     }
 
     bool hasBubble() const {
-        for (auto nd : nodes) {
-            if (nd->state == Node::BUBBLE) return true;
+        for (auto nd : bubbleSet) {
+            if (!nd->isEliminated()) return true;
         }
         return false;
     }
@@ -482,7 +492,8 @@ class Graph : public GraphBase {
                         string_inputs.push_back(input->name);
                     }
                 }
-                if (edge->getOutput() != nullptr && !edge->getOutput()->isEliminated()) {
+                if (edge->getOutput() != nullptr &&
+                    !edge->getOutput()->isEliminated()) {
                     string_outputs.push_back(edge->getOutput()->name);
                 }
                 std::sort(string_inputs.begin(), string_inputs.end());
@@ -523,6 +534,7 @@ class Graph : public GraphBase {
             edge->markEliminated();
             for (auto nd : edge->getInputs()) {
                 nd->markPotential();
+                searchSet.insert(nd);
             }
         }
         transformTape.push_back(HistEntry{node, TAIL_NODE, potential()});
@@ -568,10 +580,13 @@ class Graph : public GraphBase {
             d->addInputOp(edge);
             edges.push_back(edge);
 
-            if (!d->party->is_corrupted() && 1 < d->getValidInDegrees())
+            if (!d->party->is_corrupted() && 1 < d->getValidInDegrees()) {
                 d->state = Node::BUBBLE;
-            else
+                bubbleSet.insert(d);
+            } else {
                 d->markPotential();
+            }
+            searchSet.insert(d);
         }
 
         transformTape.push_back(HistEntry{node, SIM_POLY, potential()});
@@ -718,6 +733,8 @@ class Graph : public GraphBase {
             edges.push_back(newEdge);
 
             dst->addInputOp(newEdge);
+            dst->markPotential();
+            searchSet.insert(dst);
             for (auto src : srcNodes) src->addOutputOp(newEdge);
 
             // reverse transit
@@ -725,6 +742,9 @@ class Graph : public GraphBase {
                 if (!edge->isEliminated() &&
                     edge->getType() == Operator::TRANSFER) {
                     reverseTransitByEdge(edge);
+                    auto src = edge->getInputs().front();
+                    src->markPotential();
+                    searchSet.insert(src);
                     break;
                 }
         }
@@ -734,7 +754,7 @@ class Graph : public GraphBase {
         return true;
     }
 
-    bool tryProving(std::vector<std::string> &histories) {
+    bool tryProving(std::vector<std::string>& histories) {
         if (!hasBubble()) {
             return true;
         }
@@ -804,6 +824,7 @@ class Graph : public GraphBase {
     }
 
     bool tryProvingByPotential() {
+        computePotential = true;
         while (hasBubble()) {
             bool transformed = false;
             // first try to eliminate tailing node
@@ -829,6 +850,27 @@ class Graph : public GraphBase {
                         break;
                     }
                 }
+            if (!transformed) return false;
+        }
+        return true;
+    }
+
+    bool tryProvingByHint() {
+        computePotential = false;
+        while (hasBubble()) {
+            bool transformed = false;
+            while (!searchSet.empty()) {
+                auto node = *searchSet.begin();
+                searchSet.erase(node);
+                if (!node->isEliminated()) {
+                    if (eliminateTailingNode(node) ||
+                        reverseOutputReconstruct(node) ||
+                        simulatePolynomial(node)) {
+                        transformed = true;
+                        break;
+                    }
+                }
+            }
             if (!transformed) return false;
         }
         return true;
