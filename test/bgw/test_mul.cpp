@@ -40,11 +40,11 @@ void test_bgw_add(size_t I, size_t T, size_t N, size_t M, int verbose = 1) {
     for (int i = 0; i < N; i++)
         graph.importFrontend(&protocol.yield(*parties[i]));
 
-    prove_helper(graph, verbose);
+    prove_by_hint(graph, verbose);
 }
 
 int main(int argc, char* argv[]) {
-    if (argc <= 3) {
+    if (argc <= 4) {
         cout << "Usage: " << argv[0] << " I T N M" << endl;
         return 0;
     }

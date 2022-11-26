@@ -103,9 +103,10 @@ class Graph : public GraphBase {
     size_t T = 0;
     std::set<const PartyDecl*> srcParties;
     std::set<Node*> searchSet, bubbleSet;
-    bool computePotential = false;
 
    public:
+    bool computePotential = false;
+
     enum TransformType {
         TAIL_NODE,
         TAIL_EDGE,
@@ -226,7 +227,7 @@ class Graph : public GraphBase {
         constexpr uint8_t FLAG_BUBBLE_TARGET = 4;
         int len = nodes.size();
         std::map<Node*, int> mapNodeIndex;
-        uint8_t* flags = nullptr;  // new uint8_t[len];
+        uint8_t* flags = new uint8_t[len];
         std::queue<int> q;
         // from corrupted
         for (int i = 0; i < len; i++) {

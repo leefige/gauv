@@ -31,13 +31,13 @@ void test_linear_bgw(size_t I, size_t T) {
         x.push_back(bgw::Variable(bgw_ctx) = *secrets[i]);
     // protocol described here
     auto c = Constant(ctx, "const_2");
-    auto& protocol = x[0] + x[1] + c * x[2];
+    auto protocol = x[0] + x[1] + c * x[2];
 
     Graph graph;
     for (int i = 0; i < N; i++)
         graph.importFrontend(&protocol.yield(*parties[i]));
 
-    prove_helper(graph);
+    prove_by_potential(graph);
 }
 
 int main(int argc, char* argv[]) {
