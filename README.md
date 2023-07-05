@@ -12,7 +12,7 @@ make test_add test_mul
 ## Test cases
 
 1. `test/bgw/test_add 8 10 21 100`
-2. `test/bgw/test_mul 8 10 21 300`
+2. `test/bgw/test_mul 8 10 21 30` (potential OOM)
 3. Loop over I from 1 to 5 for `test/bgw/test_mul I 5 11 20`
 
 **Following contents are out-dated!**
