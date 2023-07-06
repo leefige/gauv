@@ -15,7 +15,7 @@
 namespace mpc {
 
 class GraphBase {
-   public:
+public:
     NodeVec nodes;
     OpVec edges;
 
@@ -39,9 +39,9 @@ class GraphBase {
                 if (input != nullptr && !input->isEliminated()) {
                     std::string str = input->to_string();
                     auto it = std::find_if(edges.begin(), edges.end(),
-                                           [str](const Operation* op) {
-                                               return op->to_string() == str;
-                                           });
+                        [str](const Operation* op) {
+                            return op->to_string() == str;
+                        });
                     assert(it != edges.end());
                     nodes[i]->addInputOp(edges[it - edges.begin()]);
                 }
@@ -51,9 +51,9 @@ class GraphBase {
                 if (output != nullptr && !output->isEliminated()) {
                     std::string str = output->to_string();
                     auto it = std::find_if(edges.begin(), edges.end(),
-                                           [str](const Operation* op) {
-                                               return op->to_string() == str;
-                                           });
+                        [str](const Operation* op) {
+                            return op->to_string() == str;
+                        });
                     assert(it != edges.end());
                     nodes[i]->addOutputOp(edges[it - edges.begin()]);
                 }
@@ -66,9 +66,9 @@ class GraphBase {
                 if (input != nullptr && !input->isEliminated()) {
                     std::string str = input->to_string();
                     auto it = std::find_if(nodes.begin(), nodes.end(),
-                                           [str](const Node* node) {
-                                               return node->to_string() == str;
-                                           });
+                        [str](const Node* node) {
+                            return node->to_string() == str;
+                        });
                     assert(it != nodes.end());
                     edges[i]->addInput(nodes[it - nodes.begin()]);
                 }
@@ -77,9 +77,9 @@ class GraphBase {
                 !g.edges[i]->getOutput()->isEliminated()) {
                 std::string str = g.edges[i]->getOutput()->to_string();
                 auto it = std::find_if(nodes.begin(), nodes.end(),
-                                       [str](const Node* node) {
-                                           return node->to_string() == str;
-                                       });
+                    [str](const Node* node) {
+                        return node->to_string() == str;
+                    });
                 assert(it != nodes.end());
                 edges[i]->setOutput(nodes[it - nodes.begin()]);
             }
@@ -104,7 +104,7 @@ class Graph : public GraphBase {
     std::set<const PartyDecl*> srcParties;
     std::set<Node*> searchSet, bubbleSet;
 
-   public:
+public:
     bool computePotential = false;
 
     enum TransformType {
@@ -132,7 +132,7 @@ class Graph : public GraphBase {
             }
         }
         return (edge != nullptr &&
-                !edge->getInputs().front()->party->is_corrupted());
+            !edge->getInputs().front()->party->is_corrupted());
     }
 
     static auto traceOriginalParty(Node* node) {
@@ -165,25 +165,27 @@ class Graph : public GraphBase {
 
     static std::string to_string(TransformType type) {
         switch (type) {
-            case TAIL_NODE:
-                return "TAIL_NODE";
-            case TAIL_EDGE:
-                return "TAIL_EDGE";
-            case REVERSE_RECONSTRUCT:
-                return "REVERSE_RECONSTRUCT";
-            case REVERSE_TRANSIT:
-                return "REVERSE_TRANSIT";
-            case SIM_POLY:
-                return "SIM_POLY";
-            case REVERSE_OUTPUT_RECONSTRUCT:
-                return "REVERSE_OUTPUT_RECONSTRUCT";
+        case TAIL_NODE:
+            return "TAIL_NODE";
+        case TAIL_EDGE:
+            return "TAIL_EDGE";
+        case REVERSE_RECONSTRUCT:
+            return "REVERSE_RECONSTRUCT";
+        case REVERSE_TRANSIT:
+            return "REVERSE_TRANSIT";
+        case SIM_POLY:
+            return "SIM_POLY";
+        case REVERSE_OUTPUT_RECONSTRUCT:
+            return "REVERSE_OUTPUT_RECONSTRUCT";
+        default:
+            throw std::runtime_error("Bad TransformType");
         }
     }
 
     static std::string to_string(Potential p) {
         std::stringstream ss;
         ss << "(" << std::get<0>(p) << "," << std::get<1>(p) << ","
-           << std::get<2>(p) << ")";
+            << std::get<2>(p) << ")";
         return ss.str();
     }
 
@@ -304,109 +306,109 @@ class Graph : public GraphBase {
         auto share = dynamic_cast<const Share*>(exp);
         auto poly = dynamic_cast<const Poly*>(exp);
         switch (exp->cequation().op()) {
-            case Operator::NONE:
-                break;
-            case Operator::INPUT:
-                if (secret != nullptr) {
-                    // create new secret node
-                    node = new Node();
-                    node->name = secret->name();
-                    node->type = Node::INPUT;
-                    node->party = &secret->party();
-                    nodes.push_back(node);
-                }
-                // placeholders not secret are not recorded
-                break;
-            case Operator::TRANSFER:
-            case Operator::ADD:
-            case Operator::SUB:
-            case Operator::MUL:
-            case Operator::DIV:
-            case Operator::SCALARMUL:
-            case Operator::RECONSTRUCT:
-                // simple nodes -> node operation
-                operation = new Operation(exp->cequation().op());
-                for (auto oprand : exp->cequation().coprands()) {
-                    // skip constant
-                    if (dynamic_cast<const Constant*>(oprand)) {
-                        operation->payload = oprand;
-                        continue;
-                    }
-                    auto tmp_node = importFrontend(oprand);
-                    operation->addInput(tmp_node);
-                    tmp_node->addOutputOp(operation);
-                }
+        case Operator::NONE:
+            break;
+        case Operator::INPUT:
+            if (secret != nullptr) {
+                // create new secret node
                 node = new Node();
-                assert(share != nullptr);
-                node->name = share->name();
-                node->party = &share->party();
-                node->type = Node::NONE;
-
-                node->addInputOp(operation);
-                operation->setOutput(node);
-
-                edges.push_back(operation);
+                node->name = secret->name();
+                node->type = Node::INPUT;
+                node->party = &secret->party();
                 nodes.push_back(node);
-                break;
-            case Operator::EVAL:
-                // poly -> share operation
-                assert(exp->cequation().coprands().size() == 1);
-                assert(share != nullptr);  // target should be share
-                old_node = importFrontend(exp->cequation().coprands().front());
-                assert(old_node->getInDegrees() == 1);
-                old_operation = old_node->getInputs().front();
-                assert(old_operation->getType() == Operator::POLILIZE);
-
-                // copy
-                operation = new Operation(*old_operation);
-                node = new Node(*old_node);
-
-                // properties
-                operation->setType(exp->cequation().op());
-                node->name = share->name();
-                node->party = &share->party();
-                node->type = Node::NONE;
-
-                // connections
-                operation->setOutput(node);
-                node->getInputs().clear();
-                node->addInputOp(operation);
-                for (auto nd : old_operation->getInputs()) {
-                    nd->addOutputOp(operation);
+            }
+            // placeholders not secret are not recorded
+            break;
+        case Operator::TRANSFER:
+        case Operator::ADD:
+        case Operator::SUB:
+        case Operator::MUL:
+        case Operator::DIV:
+        case Operator::SCALARMUL:
+        case Operator::RECONSTRUCT:
+            // simple nodes -> node operation
+            operation = new Operation(exp->cequation().op());
+            for (auto oprand : exp->cequation().coprands()) {
+                // skip constant
+                if (dynamic_cast<const Constant*>(oprand)) {
+                    operation->payload = oprand;
+                    continue;
                 }
+                auto tmp_node = importFrontend(oprand);
+                operation->addInput(tmp_node);
+                tmp_node->addOutputOp(operation);
+            }
+            node = new Node();
+            assert(share != nullptr);
+            node->name = share->name();
+            node->party = &share->party();
+            node->type = Node::NONE;
 
-                edges.push_back(operation);
-                nodes.push_back(node);
-                break;
-            case Operator::POLILIZE:
-                operation = new Operation(Operator::POLILIZE);
-                node = new Node();
-                assert(poly != nullptr);
-                if (T < poly->degree()) T = poly->degree();
-                node->name = poly->name();
-                node->party = &poly->party();
-                node->type = Node::OTHERS;
-                old_node = importFrontend(&poly->const_term());
-                if (old_node != nullptr) {
-                    operation->addInput(old_node);
-                    // old_node->addOutputOp(operation);
-                }
-                for (int i = 0; i < poly->degree(); i++) {
-                    // make a random node first
-                    auto random_node = new Node();
-                    random_node->name =
-                        poly->name() + "_coeff_" + std::to_string(i);
-                    random_node->party = &poly->party();
-                    random_node->type = Node::RANDOM;
-                    // random_node->addOutputOp(operation);
-                    operation->addInput(random_node);
-                    nodes.push_back(random_node);
-                }
-                operation->setOutput(node);
-                node->addInputOp(operation);
-                break;
-            default:
-                break;
+            node->addInputOp(operation);
+            operation->setOutput(node);
+
+            edges.push_back(operation);
+            nodes.push_back(node);
+            break;
+        case Operator::EVAL:
+            // poly -> share operation
+            assert(exp->cequation().coprands().size() == 1);
+            assert(share != nullptr);  // target should be share
+            old_node = importFrontend(exp->cequation().coprands().front());
+            assert(old_node->getInDegrees() == 1);
+            old_operation = old_node->getInputs().front();
+            assert(old_operation->getType() == Operator::POLILIZE);
+
+            // copy
+            operation = new Operation(*old_operation);
+            node = new Node(*old_node);
+
+            // properties
+            operation->setType(exp->cequation().op());
+            node->name = share->name();
+            node->party = &share->party();
+            node->type = Node::NONE;
+
+            // connections
+            operation->setOutput(node);
+            node->getInputs().clear();
+            node->addInputOp(operation);
+            for (auto nd : old_operation->getInputs()) {
+                nd->addOutputOp(operation);
+            }
+
+            edges.push_back(operation);
+            nodes.push_back(node);
+            break;
+        case Operator::POLILIZE:
+            operation = new Operation(Operator::POLILIZE);
+            node = new Node();
+            assert(poly != nullptr);
+            if (T < poly->degree()) T = poly->degree();
+            node->name = poly->name();
+            node->party = &poly->party();
+            node->type = Node::OTHERS;
+            old_node = importFrontend(&poly->const_term());
+            if (old_node != nullptr) {
+                operation->addInput(old_node);
+                // old_node->addOutputOp(operation);
+            }
+            for (int i = 0; i < poly->degree(); i++) {
+                // make a random node first
+                auto random_node = new Node();
+                random_node->name =
+                    poly->name() + "_coeff_" + std::to_string(i);
+                random_node->party = &poly->party();
+                random_node->type = Node::RANDOM;
+                // random_node->addOutputOp(operation);
+                operation->addInput(random_node);
+                nodes.push_back(random_node);
+            }
+            operation->setOutput(node);
+            node->addInputOp(operation);
+            break;
+        default:
+            break;
         }
         frontBackMap[exp] = node;
         return node;
@@ -423,11 +425,11 @@ class Graph : public GraphBase {
                 validEdges.push_back(edge);
         }
         std::sort(validNodes.begin(), validNodes.end(),
-                  [](Node* l, Node* r) { return l->name < r->name; });
+            [](Node* l, Node* r) { return l->name < r->name; });
         std::sort(validEdges.begin(), validEdges.end(),
-                  [](Operation* l, Operation* r) {
-                      return l->getOutput()->name < r->getOutput()->name;
-                  });
+            [](Operation* l, Operation* r) {
+                return l->getOutput()->name < r->getOutput()->name;
+            });
         if (validNodes.size()) {
             o << validNodes[0]->to_string();
         }
@@ -500,7 +502,7 @@ class Graph : public GraphBase {
                 std::sort(string_inputs.begin(), string_inputs.end());
                 std::sort(string_outputs.begin(), string_outputs.end());
                 std::string hashstring_input = "_INPUT_",
-                            hashstring_output = "_OUTPUT_";
+                    hashstring_output = "_OUTPUT_";
                 for (auto string_input : string_inputs) {
                     hashstring_input += string_input;
                 }
@@ -645,7 +647,7 @@ class Graph : public GraphBase {
         return true;
     }
 
-   private:
+private:
     void reverseTransitByEdge(Operation* edge) {
         Node* src_node = edge->getInputs().front();
         Node* node = edge->getOutput();
@@ -660,7 +662,7 @@ class Graph : public GraphBase {
         node->addOutputOp(new_edge);
     }
 
-   public:
+public:
     bool reverseTransit(Node* node) {
         if (node->getValidInDegrees() <= 1) return false;
         Operation* edge = nullptr;
