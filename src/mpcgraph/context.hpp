@@ -100,11 +100,12 @@ public:
      * @brief Register a secret input for some party.
      *
      * @param name Name of the secret.
+     * @param type Type of the secret (arithmetic or binary).
      * @param secret Reference to the secret variable to be registered.
      * @return bool True if seccess, false if the name of this secret has been
      * rigistered in this context.
      */
-    bool register_secret(const std::string& name, Secret& secret)
+    bool register_secret(const std::string& name, Type* type, Secret& secret)
     {
         return _register_ref_to_context(name, secret, _secrets);
     }

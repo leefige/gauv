@@ -25,7 +25,7 @@ class Poly : public Expression {
             const PartyDecl& party,
             Expression& C,
             size_t degree)
-        : Expression(context, name, Equation(Operator::POLILIZE, {&C})),
+        : Expression(context, name, PolyType::get_poly_type(C.type()), Equation(Operator::POLILIZE, {&C})),
             _degree(degree), _party(party), _C(C)
     {
         if(Secret* s = dynamic_cast<Secret*>(&C)) {
@@ -67,6 +67,7 @@ public:
         auto ret = new Share(
             context(),
             ss.str(),
+            dynamic_cast<PolyType *>(this->type())->elem_type,
             Equation(Operator::EVAL, {this}),
             _party
         );

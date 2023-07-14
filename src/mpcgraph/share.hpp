@@ -12,38 +12,6 @@
 
 namespace mpc {
 
-class party_mismatch : public std::exception {
-    std::string msg;
-public:
-    party_mismatch(const PartyDecl& want, const PartyDecl& get) noexcept
-    {
-        std::stringstream ss;
-        ss << "Wants " << want << ", gets " << get;
-        msg = ss.str();
-    }
-
-    virtual const char* what() const noexcept override
-    {
-        return msg.c_str();
-    }
-};
-
-class party_duplicated : public std::exception {
-    std::string msg;
-public:
-    party_duplicated(const PartyDecl& party) noexcept
-    {
-        std::stringstream ss;
-        ss << "Wants a party other than " << party;
-        msg = ss.str();
-    }
-
-    virtual const char* what() const noexcept override
-    {
-        return msg.c_str();
-    }
-};
-
 class Poly;
 
 class Share : public Expression {
@@ -58,9 +26,19 @@ class Share : public Expression {
 
     explicit Share(Context& context,
             const std::string& name,
+            Type* type,
+            const PartyDecl& party) noexcept
+        : Expression(context, name, type, Equation(Operator::INPUT, {})), _party(party)
+    {
+        (void) context.register_share(name, this);
+    }
+
+    explicit Share(Context& context,
+            const std::string& name,
+            Type* type,
             const Equation& eqn,
             const PartyDecl& party) noexcept
-        : Expression(context, name, eqn), _party(party)
+        : Expression(context, name, type, eqn), _party(party)
     {
         (void) context.register_share(name, this);
     }
@@ -70,6 +48,7 @@ class Share : public Expression {
         if (a._party != b._party) {
             throw party_mismatch(a._party, b._party);
         }
+        
 
         auto& ctx = Context::get_context();
         size_t num = ctx.n_share();
@@ -79,6 +58,7 @@ class Share : public Expression {
         auto ret = new Share(
             ctx,
             ss.str(),
+            a.type(),
             Equation(op, {&a, &b}),
             a._party
         );
@@ -89,6 +69,15 @@ public:
     virtual ~Share()
     {
         // std::cout << "~Share " << name() << " released" << std::endl;
+    }
+
+    static Share& gen_share(Context& context, Type* type, const PartyDecl& party)
+    {
+        size_t num = context.n_share();
+        std::stringstream ss;
+        ss << "share_" << num;
+        auto ret = new Share(context, ss.str(), type, party);
+        return *ret;
     }
 
     const PartyDecl& party() const { return _party; }
@@ -141,6 +130,7 @@ public:
         auto ret = new Share(
             ctx,
             ss.str(),
+            type(),
             Equation(Operator::SCALARMUL, {this, &c}),
             _party
         );
@@ -170,6 +160,7 @@ public:
         auto ret = new Share(
             ctx,
             ss.str(),
+            this->type(),
             Equation(Operator::TRANSFER, {this}),
             party
         );
@@ -178,6 +169,16 @@ public:
 
     static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl& party)
     {
+        Type *type = shares[0]->type();
+        for (int i = 1; i < shares.size(); ++i) {
+            if (shares[i]->type() != type) {
+                throw type_mismatch(type, shares[i]->type());
+            }
+        }
+        // TODO: to be honest, I think we need more checks here.
+        // We need to check if the shares comes from the same polynomial and the shares are more than the degree of the polynomial.
+        // Note that this polynomial is not a explicit `Expression`, so it is a little hard to describe in the current framework yet...
+
         const PartyDecl& party_0 = dynamic_cast<const Share*>(shares[0])->_party;
         for (auto share : shares) {
             const PartyDecl& party_i = dynamic_cast<const Share*>(share)->_party;
@@ -194,6 +195,7 @@ public:
         auto ret = new Share(
             ctx,
             ss.str(),
+            type,
             Equation(Operator::RECONSTRUCT, shares),
             party
         );

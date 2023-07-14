@@ -7,6 +7,7 @@
 #include "context.hpp"
 #include "operator.hpp"
 #include "partydecl.hpp"
+#include "type.hpp"
 
 namespace mpc {
 
@@ -25,6 +26,7 @@ class Equation {
     static const Equation nulleqn;
 
     // TODO: ensure oprands in the same context
+    // TODO: type checking
     explicit Equation(const Operator& op,
                       const std::vector<Expression*>& oprands) noexcept
         : _op(op), _oprands(oprands) {}
@@ -41,15 +43,15 @@ inline const Equation Equation::nulleqn(Operator::NONE, {});
 class Expression {
     Context& _ctx;
     std::string _name;
+    Type* _type;
     Equation _eqn;
 
    protected:
-    explicit Expression(Context& context, const std::string& name,
-                        const Equation& eqn) noexcept
-        : _ctx(context), _name(name), _eqn(eqn) {}
+    explicit Expression(Context& context, const std::string& name, Type* type, const Equation& eqn) noexcept
+        : _ctx(context), _name(name), _type(type), _eqn(eqn) {}
 
-    explicit Expression(Context& context, const std::string& name) noexcept
-        : Expression(context, name, Equation::nulleqn) {}
+    explicit Expression(Context& context, const std::string& name, Type* type) noexcept
+        : Expression(context, name, type, Equation::nulleqn) {}
 
    public:
     virtual ~Expression() {}
@@ -59,6 +61,8 @@ class Expression {
     Context& context() { return _ctx; }
 
     std::string name() const { return _name; }
+
+    Type* type() { return _type; }
 
     Equation& equation() { return _eqn; }
     const Equation& cequation() const { return _eqn; }
@@ -71,7 +75,7 @@ class Expression {
 class Literal : public Expression {
    protected:
     explicit Literal(Context& context, const std::string& name) noexcept
-        : Expression(context, name, Equation(Operator::INPUT, {})) {}
+        : Expression(context, name,  ArithFieldType::get_arith_field_type(), Equation(Operator::INPUT, {})) {}
 
    public:
     virtual ~Literal() {}
@@ -79,8 +83,8 @@ class Literal : public Expression {
 
 class Placeholder : public Expression {
    protected:
-    explicit Placeholder(Context& context, const std::string& name) noexcept
-        : Expression(context, name, Equation(Operator::INPUT, {})) {}
+    explicit Placeholder(Context& context, const std::string& name, Type* type) noexcept
+        : Expression(context, name, type, Equation(Operator::INPUT, {})) {}
 
    public:
     virtual ~Placeholder() {}
@@ -100,9 +104,11 @@ class Constant : public Placeholder {
      *
      * @exception var_redefinition The name of this constant has been
      * registered in this context.
+     * 
+     * @note So far we assume this is an arithmetic (integer) constant.
      */
     explicit Constant(Context& context, const std::string& name)
-        : Placeholder(context, name) {
+        : Placeholder(context, name, ArithFieldType::get_arith_field_type()) {
         if (!context.register_constant(name, *this)) {
             throw var_redefinition(name);
         }
@@ -126,6 +132,9 @@ class Constant : public Placeholder {
 
 inline Constant Constant::zero(Context::get_context(), "_const_zero");
 
+// TODO(Xingyu): "secret" is not a suitable name for a kind of expression, because it is not "context-free", i.e., it depends on how this expression is used.
+// But actually, this expression cannot only be used as a secret of a Shamir sharing, but also possible to be added or substracted.
+// I prefer to call it something like "plainNumber" in the future.
 class Secret : public Placeholder {
     Secret(const Secret&) = delete;
     Secret(Secret&&) = delete;
@@ -144,10 +153,10 @@ class Secret : public Placeholder {
      * @exception var_redefinition The name of this secret has been
      * registered in this context.
      */
-    explicit Secret(Context& context, const std::string& name,
+    explicit Secret(Context& context, const std::string& name, Type* type,
                     const PartyDecl& party)
-        : Placeholder(context, name), _party(party) {
-        if (!context.register_secret(name, *this)) {
+        : Placeholder(context, name, type), _party(party) {
+        if (!context.register_secret(name, type, *this)) {
             throw var_redefinition(name);
         }
     }
