@@ -19,7 +19,7 @@ void test_linear_bgw(size_t I, size_t T) {
     std::vector<Secret*> secrets;
     for (int i = 0; i < N; i++) {
         auto party = new PartyDecl(ctx, "p" + to_string(i));
-        auto secret = new Secret(ctx, "x" + to_string(i), *party);
+        auto secret = new Secret(ctx, "x" + to_string(i), ArithFieldType::get_arith_field_type(), party);
         parties.push_back(party);
         secrets.push_back(secret);
     }
@@ -35,7 +35,7 @@ void test_linear_bgw(size_t I, size_t T) {
 
     Graph graph;
     for (int i = 0; i < N; i++)
-        graph.importFrontend(&protocol.yield(*parties[i]));
+        graph.importFrontend(&protocol.yield(parties[i]));
 
     prove_by_potential(graph);
 }

@@ -45,7 +45,7 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M, int verbose = 1) 
 
     for (int j = 0; j < M; j++) {
         for (int i = 0; i < N; i++) {
-            auto secret = new Secret(ctx, "x_" + to_string(i) + "_" + to_string(j), *(parties[i]));
+            auto secret = new Secret(ctx, "x_" + to_string(i) + "_" + to_string(j), ArithFieldType::get_arith_field_type(), parties[i]);
             secrets.push_back(secret);
         }
     }
@@ -70,7 +70,7 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M, int verbose = 1) 
 
     auto graph = make_shared<Graph>();
     for (int i = 0; i < N; i++) {
-        graph->importFrontend(&(protocol->yield(*parties[i])));
+        graph->importFrontend(&(protocol->yield(parties[i])));
     }
 
     prove_by_hint(*graph, verbose);

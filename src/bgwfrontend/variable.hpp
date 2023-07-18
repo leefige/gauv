@@ -43,11 +43,18 @@ public:
         _shares = std::move(o._shares);
         return *this;
     }
-    Variable& operator=(mpc::Secret& sec) {
-        return *(new Variable(_ctx, sec));
-    }
-    Variable& operator=(mpc::Share& share) {
-        return *(new Variable(_ctx, share));
+    Variable& operator=(mpc::Expression& s) {
+        // Xingyu: we'd better to check the type of s here. It must be a number (not a polynomial).
+        auto& poly =
+            mpc::Poly::gen_poly(s.context(), s.party(), s, _ctx.T());
+        for (auto p : _ctx.parties()) {
+            auto& s = poly.eval(*p);
+            if (p == s.party())
+                _shares.push_back(&s);
+            else
+                _shares.push_back(&s.transfer(p));
+        }
+        return *this;
     }
 
     mpc::Share& yield(const mpc::PartyDecl* party) const {

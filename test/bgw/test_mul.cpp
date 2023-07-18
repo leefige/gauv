@@ -20,14 +20,13 @@ void test_bgw_add(size_t I, size_t T, size_t N, size_t M, int verbose = 1) {
         auto party = new PartyDecl(ctx, "p" + to_string(i));
         parties.push_back(party);
         for (int j = 0; j < M; j++) {
-            auto secret = new Secret(ctx, "x" + to_string(i * M + j), *party);
+            auto secret = new Secret(ctx, "x" + to_string(i * M + j), ArithFieldType::get_arith_field_type(), party);
             secrets.push_back(secret);
         }
     }
     for (int i = 0; i < I; i++) parties[i]->set_corrupted();
 
     bgw::Context bgw_ctx(parties, T);
-    std::vector<bgw::Variable> x;
     // protocol described here
     bgw::Variable protocol(bgw_ctx), var(bgw_ctx);
     protocol = *secrets[0];
@@ -38,7 +37,7 @@ void test_bgw_add(size_t I, size_t T, size_t N, size_t M, int verbose = 1) {
 
     Graph graph;
     for (int i = 0; i < N; i++)
-        graph.importFrontend(&protocol.yield(*parties[i]));
+        graph.importFrontend(&protocol.yield(parties[i]));
 
     prove_by_hint(graph, verbose);
 }
