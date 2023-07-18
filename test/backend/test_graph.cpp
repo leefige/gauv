@@ -68,7 +68,7 @@ void test_graph_bgw() {
         for (int j = 0; j < parties.size(); j++) {
             auto& _s_i_j = q_i_x.eval(*parties[j]);
             if (i != j) {
-                auto& s_i_j = _s_i_j.transfer(*parties[j]);
+                auto& s_i_j = _s_i_j.transfer(parties[j]);
                 transfers[j].push_back(&s_i_j);
                 cout << parties[i]->name() << " sends to " << parties[j]->name()
                      << ": " << s_i_j.name() << endl;
@@ -100,7 +100,7 @@ void test_graph_bgw() {
             if (i == j)
                 deltas_transferred.push_back(deltas[j]);
             else
-                deltas_transferred.push_back(&deltas[j]->transfer(*parties[i]));
+                deltas_transferred.push_back(&deltas[j]->transfer(parties[i]));
         }
         Share* subgraph_i =
             &Share::reconstruct(deltas_transferred, *parties[i]);

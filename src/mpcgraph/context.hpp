@@ -14,9 +14,14 @@ class PartyDecl;
 class Secret;
 class Constant;
 class Share;
+class Randomness;
+class Type;
 
 class Poly;
 
+/**
+ * @brief This context provides a "namespace" of parties, secrets, constants, polynomials and shares. In this namespace, every name is kept unique.
+ */
 class Context {
     std::string _name;
 
@@ -26,6 +31,7 @@ class Context {
 
     std::unordered_map<std::string, std::shared_ptr<Poly>> _polies;
     std::unordered_map<std::string, std::shared_ptr<Share>> _shares;
+    std::unordered_map<std::string, std::shared_ptr<Randomness>> _randomness;
 
     /**
      * @brief Construct a new Context object.
@@ -77,7 +83,7 @@ public:
      *
      * @param name Name of the party.
      * @param party Reference to the party.
-     * @return bool True if seccess, false if the name of this party has been
+     * @return bool True if successful, false if the name of this party has been
      * rigistered in this context.
      */
     bool register_party(const std::string& name, PartyDecl& party)
@@ -102,7 +108,7 @@ public:
      * @param name Name of the secret.
      * @param type Type of the secret (arithmetic or binary).
      * @param secret Reference to the secret variable to be registered.
-     * @return bool True if seccess, false if the name of this secret has been
+     * @return bool True if successful, false if the name of this secret has been
      * rigistered in this context.
      */
     bool register_secret(const std::string& name, Type* type, Secret& secret)
@@ -126,7 +132,7 @@ public:
      *
      * @param name Name of the constant.
      * @param var Reference to the constant to be registered.
-     * @return bool True if seccess, false if the name of this constant has been
+     * @return bool True if successful, false if the name of this constant has been
      * rigistered in this context.
      */
     bool register_constant(const std::string& name, Constant& var)
@@ -145,14 +151,43 @@ public:
      */
     Constant& constant(const std::string& name) { return _constants.at(name); }
 
+    /**
+     * @brief Declared a named polynomial.
+     * 
+     * @param name Name of the polynomial.
+     * @param poly Pointer to the polynomial to be registered.
+     * @return true if successful.
+     * @return false if the name of this polynomial has been registered in this context.
+     */
     bool register_poly(const std::string& name, Poly* poly)
     {
         return _register_ptr_to_context(name, poly, _polies);
     }
 
+    /**
+     * @brief Declare a named share.
+     * 
+     * @param name Name of the share.
+     * @param share Pointer to the share to be registered.
+     * @return true if successful.
+     * @return false if the name of this share has been registered in this context.
+     */
     bool register_share(const std::string& name, Share* share)
     {
         return _register_ptr_to_context(name, share, _shares);;
+    }
+
+    /**
+     * @brief Declared a named randomness.
+     * 
+     * @param name Name of the randomness.
+     * @param randomness Reference to the randomness to be registered.
+     * @return true if successful.
+     * @return false if the name of this share has been registered in this context.
+     */
+    bool register_randomness(const std::string& name, Randomness* randomness)
+    {
+        return _register_ptr_to_context(name, randomness, _randomness);
     }
 
     size_t n_poly() const { return _polies.size(); }

@@ -12,7 +12,7 @@ namespace mpc
 
 class Poly : public Expression {
     const size_t _degree;
-    const PartyDecl& _party;
+    const PartyDecl* _party;
     const Expression& _C;
 
     Poly(const Poly&) = delete;
@@ -22,7 +22,7 @@ class Poly : public Expression {
 
     explicit Poly(Context& context,
             const std::string& name,
-            const PartyDecl& party,
+            const PartyDecl* party,
             Expression& C,
             size_t degree)
         : Expression(context, name, PolyType::get_poly_type(C.type()), Equation(Operator::POLILIZE, {&C})),
@@ -43,7 +43,7 @@ public:
         // std::cout << "~Poly " << name() << " released" << std::endl;
     }
 
-    static Poly& gen_poly(Context& context, const PartyDecl& party,
+    static Poly& gen_poly(Context& context, const PartyDecl* party,
             Expression& C, size_t degree)
     {
         size_t num = context.n_poly();
@@ -56,7 +56,7 @@ public:
     size_t degree() const { return _degree; }
 
     const Expression& const_term() const { return _C; }
-    const PartyDecl& party() const { return _party; }
+    const PartyDecl* party() const { return _party; }
 
     Share& eval(PartyDecl& party)
     {
@@ -78,7 +78,7 @@ public:
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<poly{" << _degree << "}[" << _party.name() << "][" << _C.name() << "] " << name() << ">";
+        ss << "<poly{" << _degree << "}[" << _party->name() << "][" << _C.name() << "] " << name() << ">";
         return ss.str();
     }
 

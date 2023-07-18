@@ -9,7 +9,7 @@ cd test/bgw
 make test_add test_mul test_scalable
 ```
 
-## Test cases
+## BGW
 
 The main constraint for our program is the size of the BGW graph instead of the running time.
 
@@ -20,15 +20,10 @@ The main constraint for our program is the size of the BGW graph instead of the 
    1. `test/bgw/test_scalable 20 20 115 1` (3,078,550 nodes, 2,949,635 edges)
    2. `test/bgw/test_scalable 20 20 50 5` (1,374,800 nodes, 1,247,550 edges)
 
-**Following contents are out-dated!**
+## Conversion
 
-~~This project contains two major components:~~
 
-~~1. An MPC DSL compiler (parser?) built with [ANTLR v4](https://github.com/antlr/antlr4);~~
-~~2. A verifier for MPC protocols.~~
+## Roadmap
 
-~~## Build for Linux~~
-
-~~1. Download and put ANTLR jar under `lib/`;~~
-~~2. Download, build and put the ANTLR C++ runtime under `runtime/Cpp`;~~
-~~3. Build with `CMake`.~~
+- [ ] Xingyu feels that if it is possible to execute the graph, its design and implementation will be much better, and omitted details (e.g. the value range of this node) could be discovered and perfected.
+- [ ] Xingyu feels that more documentation will make our lives better.

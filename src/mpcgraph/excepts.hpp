@@ -59,7 +59,7 @@ public:
 class party_mismatch : public std::exception {
     std::string msg;
 public:
-    party_mismatch(const PartyDecl& want, const PartyDecl& get) noexcept
+    party_mismatch(const PartyDecl* want, const PartyDecl* get) noexcept
     {
         std::stringstream ss;
         ss << "Wants " << want << ", gets " << get;
@@ -75,7 +75,7 @@ public:
 class party_duplicated : public std::exception {
     std::string msg;
 public:
-    party_duplicated(const PartyDecl& party) noexcept
+    party_duplicated(const PartyDecl* party) noexcept
     {
         std::stringstream ss;
         ss << "Wants a party other than " << party;
@@ -102,6 +102,6 @@ public:
     {
         return msg.c_str();
     }    
-}
+};
 
 } /* namespace mpc */

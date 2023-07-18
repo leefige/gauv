@@ -82,8 +82,8 @@ class Node {
     void setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
     void setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
 
-    void addInputOp(Operation* inputOp) { isOutputOf.emplace_back(inputOp); }
-    void addOutputOp(Operation* outputOp) { isInputOf.emplace_back(outputOp); }
+    void addInputOp(Operation* inputOp) { isOutputOf.push_back(inputOp); }
+    void addOutputOp(Operation* outputOp) { isInputOf.push_back(outputOp); }
 
     OpVec& getInputs() { return isOutputOf; }
     const OpVec& getInputs() const { return isOutputOf; }

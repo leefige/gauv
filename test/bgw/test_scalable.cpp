@@ -79,10 +79,10 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M, int verbose = 1) 
 // try: .\test_scalable 10 10 100 1
 int main(int argc, char* argv[]) {
     if (argc <= 4) {
-        cout << "Usage: " << argv[0] << " I T N M" << endl;
+        cout << "Usage: " << argv[0] << " I(the number of corrupted parties) T(the threshold) N(the number of parties) M(how many inputs does each party have)" << endl;
         return 0;
     }
-    auto I = atoi(argv[1]);
+    auto I = atoi(argv[1]); // FIXME: for now it seems that we do not test the case that the number of corrupted parties is no more than I, but only exact I.
     auto T = atoi(argv[2]);
     auto N = atoi(argv[3]);
     auto M = atoi(argv[4]);

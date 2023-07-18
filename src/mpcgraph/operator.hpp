@@ -21,6 +21,8 @@ enum class Operator : unsigned int {
     EVAL = 300,
     RECONSTRUCT = 301,
     POLILIZE = 302,
+
+    TYPECAST = 400,
 };
 
 inline std::ostream& operator<<(std::ostream& o, const Operator& op)
@@ -59,6 +61,8 @@ inline std::ostream& operator<<(std::ostream& o, const Operator& op)
     case Operator::POLILIZE:
         o << "POLILIZE";
         break;
+    case Operator::TYPECAST:
+        o << "TYPECAST";
 
     default:
         o << "<UNKNOWN_OP>";

@@ -63,8 +63,8 @@ class PartyDecl {
     void set_corrupted() { _corrupted = true; }
     void set_honest() { _corrupted = false; }
 
-    friend std::ostream& operator<<(std::ostream& o, const PartyDecl& p) {
-        return o << p.to_string();
+    friend std::ostream& operator<<(std::ostream& o, const PartyDecl* p) {
+        return o << p->to_string();
     }
 
     friend bool operator==(const PartyDecl& a, const PartyDecl& b) {

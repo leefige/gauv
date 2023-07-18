@@ -27,7 +27,7 @@ void test_rand_2t()
     for (int i = 0; i < parties.size(); i++) {
         auto& q_i_x = Poly::gen_poly(ctx, *parties[i], Constant::zero, SEC);
         for (int j = 0; j < parties.size(); j++) {
-            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(*parties[j]);
+            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(parties[j]);
             transfers[j].push_back(&s_i_j);
             cout << parties[i]->name() << " sends to " << parties[j]->name() << ": " << s_i_j << endl;
         }

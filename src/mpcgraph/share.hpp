@@ -22,13 +22,11 @@ class Share : public Expression {
     Share& operator=(const Share&) = delete;
     Share& operator=(Share&&) = delete;
 
-    const PartyDecl& _party;
-
     explicit Share(Context& context,
             const std::string& name,
             Type* type,
-            const PartyDecl& party) noexcept
-        : Expression(context, name, type, Equation(Operator::INPUT, {})), _party(party)
+            const PartyDecl* party) noexcept
+        : Expression(context, name, type, Equation(Operator::INPUT, {}), party)
     {
         (void) context.register_share(name, this);
     }
@@ -37,16 +35,16 @@ class Share : public Expression {
             const std::string& name,
             Type* type,
             const Equation& eqn,
-            const PartyDecl& party) noexcept
-        : Expression(context, name, type, eqn), _party(party)
+            const PartyDecl* party) noexcept
+        : Expression(context, name, type, eqn, party)
     {
         (void) context.register_share(name, this);
     }
 
     friend Share& _binary_op(Share& a, Share& b, Operator op)
     {
-        if (a._party != b._party) {
-            throw party_mismatch(a._party, b._party);
+        if (a.party() != b.party()) {
+            throw party_mismatch(a.party(), b.party());
         }
         
 
@@ -60,7 +58,7 @@ class Share : public Expression {
             ss.str(),
             a.type(),
             Equation(op, {&a, &b}),
-            a._party
+            a.party()
         );
         return *ret;
     }
@@ -71,7 +69,7 @@ public:
         // std::cout << "~Share " << name() << " released" << std::endl;
     }
 
-    static Share& gen_share(Context& context, Type* type, const PartyDecl& party)
+    static Share& gen_share(Context& context, Type* type, const PartyDecl* party)
     {
         size_t num = context.n_share();
         std::stringstream ss;
@@ -80,12 +78,10 @@ public:
         return *ret;
     }
 
-    const PartyDecl& party() const { return _party; }
-
     virtual std::string to_string() const override
     {
         std::stringstream ss;
-        ss << "<share[" << _party.name() << "] "
+        ss << "<share[" << party()->name() << "] "
             << name() << "=" << cequation().op() << "(";
 
         for (auto cit = cequation().coprands().cbegin();
@@ -132,7 +128,7 @@ public:
             ss.str(),
             type(),
             Equation(Operator::SCALARMUL, {this, &c}),
-            _party
+            party()
         );
         return *ret; 
     }
@@ -146,9 +142,9 @@ public:
         return a.scalarMul(c);
     }
 
-    Share& transfer(const PartyDecl& party)
+    Share& transfer(const PartyDecl* party)
     {
-        if (_party == party) {
+        if (this->party() == party) {
             return *this;
         }
 
@@ -160,14 +156,14 @@ public:
         auto ret = new Share(
             ctx,
             ss.str(),
-            this->type(),
+            type(),
             Equation(Operator::TRANSFER, {this}),
             party
         );
         return *ret;
     }
 
-    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl& party)
+    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl* party)
     {
         Type *type = shares[0]->type();
         for (int i = 1; i < shares.size(); ++i) {
@@ -179,9 +175,9 @@ public:
         // We need to check if the shares comes from the same polynomial and the shares are more than the degree of the polynomial.
         // Note that this polynomial is not a explicit `Expression`, so it is a little hard to describe in the current framework yet...
 
-        const PartyDecl& party_0 = dynamic_cast<const Share*>(shares[0])->_party;
+        const PartyDecl* party_0 = dynamic_cast<const Share*>(shares[0])->party();
         for (auto share : shares) {
-            const PartyDecl& party_i = dynamic_cast<const Share*>(share)->_party;
+            const PartyDecl* party_i = dynamic_cast<const Share*>(share)->party();
             if (party_0 != party_i) {
                 throw party_mismatch(party_0, party_i);
             }

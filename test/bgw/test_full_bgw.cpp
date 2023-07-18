@@ -20,7 +20,7 @@ void test_full_bgw(int cor) {
     std::vector<Secret*> secrets;
     for (int i = 0; i < N; i++) {
         auto party = new PartyDecl(ctx, "p" + to_string(i));
-        auto secret = new Secret(ctx, "x" + to_string(i), *party);
+        auto secret = new Secret(ctx, "x" + to_string(i), ArithFieldType::get_arith_field_type(), *party);
         parties.push_back(party);
         secrets.push_back(secret);
     }
@@ -29,7 +29,7 @@ void test_full_bgw(int cor) {
     bgw::Context bgw_ctx(parties, T);
     std::vector<bgw::Variable> x;
     for (int i = 0; i < N; i++)
-        x.push_back(bgw::Variable(bgw_ctx) = *secrets[i]);
+        x.push_back(bgw::Variable(bgw_ctx, *secrets[i]));
     // protocol described here
     auto c = Constant(ctx, "const_2");
     auto protocol = x[0] * x[1] + c * x[2];

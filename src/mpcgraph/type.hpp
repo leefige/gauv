@@ -18,23 +18,27 @@
 
 using namespace std;
 
+namespace mpc {
+
 class Type {
+public:
     virtual std::string to_string() {
         return "type";
     }
 };
 
 class FieldType : public Type {
+public:
     virtual std::string to_string() {
         return "field_type";
     }
 };
 
 class ArithFieldType : public FieldType {
-    static ArithFieldType arith_field_type;
-
 public:
     static ArithFieldType *get_arith_field_type() {
+        static ArithFieldType arith_field_type;
+
         return &arith_field_type;
     }
 
@@ -44,10 +48,10 @@ public:
 };
 
 class BinFieldType : public FieldType {
-    static BinFieldType bin_field_type;
-
 public:
     static BinFieldType *get_bin_field_type() {
+        static BinFieldType bin_field_type;
+
         return &bin_field_type;
     }
 
@@ -57,14 +61,14 @@ public:
 };
 
 class PolyType : public Type {
-    static unordered_map<Type *, PolyType *> polynomials;
-
     PolyType(Type *_elem_type) : elem_type(_elem_type) {}
 
 public:
     Type *elem_type;
 
     static PolyType *get_poly_type(Type *elem_type) {
+        static unordered_map<Type *, PolyType *> polynomials;
+        
         if (polynomials.find(elem_type) == polynomials.end())
             polynomials[elem_type] = new PolyType(elem_type);
         return polynomials[elem_type];
@@ -74,3 +78,5 @@ public:
         return "poly_type";
     }
 };
+
+} /* namespace mpc */

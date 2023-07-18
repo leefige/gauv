@@ -6,6 +6,10 @@
 #include "common.hpp"
 
 namespace bgw {
+
+/**
+ * @brief This context provides what parties do we have in the protocol and what is the threshold in the protocol.
+ */
 class Context {
     PartyVec _parties;
     size_t _T;

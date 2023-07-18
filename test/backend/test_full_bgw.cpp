@@ -30,11 +30,11 @@ void test_full_bgw(int cor) {
 
     // input sharing
     for (int i = 0; i < parties.size(); i++) {
-        auto& q_i_x = Poly::gen_poly(ctx, *parties[i], *secrets[i], T);
+        auto& q_i_x = Poly::gen_poly(ctx, parties[i], *secrets[i], T);
         for (int j = 0; j < parties.size(); j++) {
             auto& s_i_j = q_i_x.eval(*parties[j]);
             if (i != j) {
-                transfers[j].push_back(&s_i_j.transfer(*parties[j]));
+                transfers[j].push_back(&s_i_j.transfer(parties[j]));
                 cout << parties[i]->name() << " sends to " << parties[j]->name()
                      << ": " << s_i_j.name() << endl;
             } else {
@@ -59,7 +59,7 @@ void test_full_bgw(int cor) {
             if (i == j) {
                 transfers[j].push_back(&s_i_j);
             } else {
-                transfers[j].push_back(&s_i_j.transfer(*parties[j]));
+                transfers[j].push_back(&s_i_j.transfer(parties[j]));
                 cout << parties[i]->name() << " sends to " << parties[j]->name()
                      << ": " << s_i_j.name() << endl;
             }
@@ -80,7 +80,7 @@ void test_full_bgw(int cor) {
             if (i == j)
                 deltas_transferred.push_back(deltas[j]);
             else
-                deltas_transferred.push_back(&deltas[j]->transfer(*parties[i]));
+                deltas_transferred.push_back(&deltas[j]->transfer(parties[i]));
         }
         Share* subgraph_i =
             &Share::reconstruct(deltas_transferred, *parties[i]);

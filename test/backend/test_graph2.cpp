@@ -86,9 +86,9 @@ void test_graph_bgw()
     transfers.resize(parties.size());
 
     for (int i = 0; i < parties.size(); i++) {
-        auto& q_i_x = Poly::gen_poly(ctx, *parties[i], *secrets[i], SEC);
+        auto& q_i_x = Poly::gen_poly(ctx, parties[i], *secrets[i], SEC);
         for (int j = 0; j < parties.size(); j++) {
-            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(*parties[j]);
+            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(parties[j]);
             transfers[j].push_back(&s_i_j);
             cout << parties[i]->name() << " sends to " << parties[j]->name()
                  << ": " << s_i_j << endl;
@@ -108,7 +108,7 @@ void test_graph_bgw()
         auto& partial_mul = *(transfers[i][0]) * *(transfers[i][1]);
         auto& q_i_x = Poly::gen_poly(ctx, *parties[i], partial_mul, SEC);
         for (int j = 0; j < N; j++) {
-            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(*parties[j]);
+            auto& s_i_j = q_i_x.eval(*parties[j]).transfer(parties[j]);
             transfers[j].push_back(&s_i_j);
             cout << parties[i]->name() << " sends to " << parties[j]->name()
                  << ": " << s_i_j << endl;
@@ -120,7 +120,7 @@ void test_graph_bgw()
         Share* mul_delta_3 = &(transfers[i][5])->scalarMul(lambda_3);
         auto& partial_sum = *mul_delta_1 + *mul_delta_2 + *mul_delta_3;
         Share* delta_i = &(partial_sum + (transfers[i][2])->scalarMul(c));
-        deltas.push_back(&(delta_i->transfer(*parties[0])));
+        deltas.push_back(&(delta_i->transfer(parties[0])));
     }
     for (int i = 0; i < N; i++) {
         Share* subgraph_i = &Share::reconstruct(deltas, *parties[i]);

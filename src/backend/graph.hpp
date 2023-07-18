@@ -1,5 +1,7 @@
 #pragma once
 
+#include <assert.h>
+
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -305,6 +307,8 @@ public:
         auto secret = dynamic_cast<const Secret*>(exp);
         auto share = dynamic_cast<const Share*>(exp);
         auto poly = dynamic_cast<const Poly*>(exp);
+        auto randomness = dynamic_cast<const Randomness*>(exp);
+        auto constant = dynamic_cast<const Constant*>(exp);
         switch (exp->cequation().op()) {
         case Operator::NONE:
             break;
@@ -314,7 +318,29 @@ public:
                 node = new Node();
                 node->name = secret->name();
                 node->type = Node::INPUT;
-                node->party = &secret->party();
+                node->party = secret->party();
+                nodes.push_back(node);
+            } else if (share != nullptr) {
+                // create new share node
+                node = new Node();
+                node->name = share->name();
+                node->type = Node::INPUT;
+                node->party = share->party();
+                nodes.push_back(node);
+            } else if (randomness != nullptr) {
+                // create new random node
+                node = new Node();
+                node->name = exp->name();
+                node->type = Node::RANDOM;
+                node->party = randomness->party();
+                nodes.push_back(node);
+            } else if (constant != nullptr) {
+                // create new constant node
+                // Actually we should not need this if everything goes right. The constant should be skipped.
+                node = new Node();
+                node->name = exp->name();
+                node->type = Node::CONSTANT;
+                node->party = constant->party();
                 nodes.push_back(node);
             }
             // placeholders not secret are not recorded
@@ -324,6 +350,7 @@ public:
         case Operator::SUB:
         case Operator::MUL:
         case Operator::DIV:
+        case Operator::TYPECAST:
         case Operator::SCALARMUL:
         case Operator::RECONSTRUCT:
             // simple nodes -> node operation
@@ -339,9 +366,8 @@ public:
                 tmp_node->addOutputOp(operation);
             }
             node = new Node();
-            assert(share != nullptr);
-            node->name = share->name();
-            node->party = &share->party();
+            node->name = exp->name();
+            node->party = exp->party();
             node->type = Node::NONE;
 
             node->addInputOp(operation);
@@ -366,7 +392,7 @@ public:
             // properties
             operation->setType(exp->cequation().op());
             node->name = share->name();
-            node->party = &share->party();
+            node->party = share->party();
             node->type = Node::NONE;
 
             // connections
@@ -386,7 +412,7 @@ public:
             assert(poly != nullptr);
             if (T < poly->degree()) T = poly->degree();
             node->name = poly->name();
-            node->party = &poly->party();
+            node->party = poly->party();
             node->type = Node::OTHERS;
             old_node = importFrontend(&poly->const_term());
             if (old_node != nullptr) {
@@ -398,7 +424,7 @@ public:
                 auto random_node = new Node();
                 random_node->name =
                     poly->name() + "_coeff_" + std::to_string(i);
-                random_node->party = &poly->party();
+                random_node->party = poly->party();
                 random_node->type = Node::RANDOM;
                 // random_node->addOutputOp(operation);
                 operation->addInput(random_node);
@@ -662,6 +688,28 @@ private:
         node->addOutputOp(new_edge);
     }
 
+    void reverseAdditionByEdge(Operation* edge) {
+        NodeVec src_nodes(edge->getInputs());
+        assert(src_nodes.size() == 2);
+        Node* a = src_nodes[0], *b = src_nodes[1];
+        Node* c = edge->getOutput();
+        if ((a->getInDegrees() == 0) != (c->getInDegrees() == 1)) {
+            assert((b->getInDegrees() == 0) == (c->getInDegrees() == 1));
+            swap(a, b);
+        }
+
+        // 由 c = a + b 改成 b = c - a
+
+        edge->markEliminated();
+        Operation* new_edge =
+            new Operation(Operator::SUB, {c, a}, b);
+        new_edge->markGenerated();
+        edges.push_back(new_edge);
+        b->addInputOp(new_edge);
+        a->addOutputOp(new_edge);
+        c->addOutputOp(new_edge);
+    }
+
 public:
     bool reverseTransit(Node* node) {
         if (node->getValidInDegrees() <= 1) return false;
@@ -685,6 +733,36 @@ public:
             else
                 src_node->markPotential();
         }
+
+        transformTape.push_back(HistEntry{node, REVERSE_TRANSIT, potential()});
+        return true;
+    }
+
+    bool reverseAddition(Node* node) {
+        if (node->getValidInDegrees() != 2) return false;
+        Operation* edge = nullptr;
+        for (auto e : node->getInputs()) {
+            if (!e->isEliminated() &&
+                e->getType() == Operator::ADD &&
+                (node->getInDegrees() == 1) == ((e->getInputs()[0]->getInDegrees() == 0) + (e->getInputs()[1]->getInDegrees() == 0)) // 零入度的节点数量不变
+            ) {
+                edge = e;
+                break;
+            }
+        }
+        if (edge == nullptr) return false;
+        NodeVec src_nodes(edge->getInputs());
+
+        reverseAdditionByEdge(edge);
+
+        // update bubbles
+        for (auto src_node : src_nodes)
+            if (!src_node->party->is_corrupted()) {
+                if (src_node->getValidInDegrees() > 0 && src_node->isInput())
+                    src_node->state = Node::BUBBLE;
+                else
+                    src_node->markPotential();
+            }
 
         transformTape.push_back(HistEntry{node, REVERSE_TRANSIT, potential()});
         return true;

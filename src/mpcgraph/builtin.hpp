@@ -3,3 +3,5 @@
 #include "expression.hpp"
 #include "poly.hpp"
 #include "share.hpp"
+#include "type.hpp"
+#include "operator.hpp"

@@ -28,7 +28,7 @@ void test_multi()
     auto& t2 = poly2.eval(p2);
     cout << t1 << endl << t2 << endl;
 
-    auto& t1s = t1.transfer(p1);
+    auto& t1s = t1.transfer(&p1);
     cout << t1s << endl;
 
     // scalar multi

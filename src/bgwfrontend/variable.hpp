@@ -8,8 +8,27 @@ class Variable {
     const Context& _ctx;
     ShareVec _shares;
 
-   public:
+public:
     Variable(const Context& ctx) : _ctx(ctx) {}
+    // This Shamir sharing is input, so we do not have a secret explicitly.
+    Variable(const Context& bgw_ctx, mpc::Context &mpc_ctx, mpc::Type* type) : _ctx(bgw_ctx) {
+        for (auto p : _ctx.parties()) {
+            _shares.push_back(&mpc::Share::gen_share(mpc_ctx, type, p));
+        }
+    }
+    // Some party has a secret, and creates a Shamir sharing to share its secret.
+    Variable(const Context& ctx, mpc::Expression& s) : _ctx(ctx) {
+        // Xingyu: we'd better to check the type of s here. It must be a number (not a polynomial).
+        auto& poly =
+            mpc::Poly::gen_poly(s.context(), s.party(), s, _ctx.T());
+        for (auto p : _ctx.parties()) {
+            auto& s = poly.eval(*p);
+            if (p == s.party())
+                _shares.push_back(&s);
+            else
+                _shares.push_back(&s.transfer(p));
+        }
+    }
     Variable(const Variable& o) : _ctx(o._ctx), _shares(o._shares) {}
     Variable(Variable&& o) : _ctx(o._ctx), _shares(std::move(o._shares)) {}
 
@@ -25,36 +44,17 @@ class Variable {
         return *this;
     }
     Variable& operator=(mpc::Secret& sec) {
-        _shares.clear();
-        auto& poly =
-            mpc::Poly::gen_poly(sec.context(), sec.party(), sec, _ctx.T());
-        for (auto p : _ctx.parties()) {
-            auto& s = poly.eval(*p);
-            if (p == &sec.party())
-                _shares.push_back(&s);
-            else
-                _shares.push_back(&s.transfer(*p));
-        }
-        return *this;
+        return *(new Variable(_ctx, sec));
     }
-    Variable& operator=(mpc::Share& sec) {
-        _shares.clear();
-        auto& poly =
-            mpc::Poly::gen_poly(sec.context(), sec.party(), sec, _ctx.T());
-        for (auto p : _ctx.parties()) {
-            auto& s = poly.eval(*p);
-            if (p == &sec.party())
-                _shares.push_back(&s);
-            else
-                _shares.push_back(&s.transfer(*p));
-        }
-        return *this;
+    Variable& operator=(mpc::Share& share) {
+        return *(new Variable(_ctx, share));
     }
 
-    mpc::Share& yield(const mpc::PartyDecl& party) const {
+    mpc::Share& yield(const mpc::PartyDecl* party) const {
+        // xxy: 我感觉这个函数的返回值的类型是 Share 就有点奇怪……
         std::vector<mpc::Expression*> transferred;
         for (auto s : _shares) {
-            if (&s->party() == &party) {
+            if (s->party() == party) {
                 transferred.push_back(s);
             } else {
                 transferred.push_back(&s->transfer(party));
@@ -72,10 +72,10 @@ class Variable {
     }
 
     friend Variable operator*(const Variable& lhs, mpc::Constant& c) {
-        Variable ret(lhs._ctx);
+        Variable ret(lhs);
         auto N = lhs._ctx.N();
         for (int i = 0; i < N; i++)
-            ret._shares.push_back(&(*lhs._shares[i] * c));
+            ret._shares[i] = &(*lhs._shares[i] * c);
         return ret;
     }
     friend Variable operator*(mpc::Constant& c, const Variable& rhs) {
@@ -88,8 +88,7 @@ class Variable {
         auto N = ctx.N();
         Variable sum(ctx);
         for (int i = 0; i < N; i++) {
-            Variable inter(ctx);
-            inter = *lhs._shares[i] * *rhs._shares[i];
+            Variable inter(ctx, *lhs._shares[i] * *rhs._shares[i]);
             auto& lambda =
                 *new mpc::Constant(lhs._shares.front()->context(),
                                    "mul_" + std::to_string(mulCounter) +

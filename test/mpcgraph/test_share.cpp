@@ -14,8 +14,8 @@ void test_share()
     PartyDecl p1(ctx, "p1");
     PartyDecl p2(ctx, "p2");
 
-    Secret x(ctx, "x", p1);
-    Secret y(ctx, "y", p2);
+    Secret x(ctx, "x", ArithFieldType::get_arith_field_type(), p1);
+    Secret y(ctx, "y", ArithFieldType::get_arith_field_type(), p2);
 
     Poly& poly1 = Poly::gen_poly(ctx, p1, x, 2);
     Poly& poly2 = Poly::gen_poly(ctx, p2, Constant::zero, 2);
@@ -28,7 +28,7 @@ void test_share()
     auto& t2 = poly2.eval(p2);
     cout << t1 << endl << t2 << endl;
 
-    auto& t1s = t1.transfer(p1);
+    auto& t1s = t1.transfer(&p1);
     auto& a1 = s1 + t1s;
     auto& a2 = s1 - t1s;
     auto& a3 = s1 * t1s;
@@ -52,10 +52,10 @@ void test_share()
 
     cout << endl;
 
-    auto& s2t = s2.transfer(p2);
+    auto& s2t = s2.transfer(&p2);
 
     auto& b1 = s2t + t2;
-    auto& b2 = a6.transfer(p2);
+    auto& b2 = a6.transfer(&p2);
     auto& b3 = b2 / b1;
     cout << s2t << endl
         << b1 << endl
@@ -63,7 +63,7 @@ void test_share()
         << b3 << endl;
 
     try {
-        a1.transfer(p1);
+        a1.transfer(&p1);
     } catch(const std::exception& e) {
         cerr << e.what() << endl;
         cout << "Exception caught" << endl;
