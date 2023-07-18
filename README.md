@@ -22,6 +22,9 @@ The main constraint for our program is the size of the BGW graph instead of the 
 
 ## Conversion
 
+`test/conversion/test_bin2arith 2 3 4`
+
+WARNING: cannot be correctly proved yet.
 
 ## Roadmap
 

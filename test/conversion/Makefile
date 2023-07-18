@@ -1,5 +1,5 @@
 CXX := clang++
-CXX_FLAGS := -O0 -std=c++20 -Wall
+CXX_FLAGS := -O2 -std=c++20 -Wall
 
 -include *.d
 test_%: test_%.cpp

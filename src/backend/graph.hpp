@@ -362,6 +362,7 @@ public:
                     continue;
                 }
                 auto tmp_node = importFrontend(oprand);
+                assert(tmp_node != nullptr);
                 operation->addInput(tmp_node);
                 tmp_node->addOutputOp(operation);
             }
