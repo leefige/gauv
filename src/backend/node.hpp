@@ -9,16 +9,18 @@ namespace mpc {
 
 class Node {
    public:
-    enum NodeType {
+    enum NodeGenre {
         NONE = 0,
 
         INPUT = 100,
         OUTPUT,
-        RANDOM,
+        RANDOM, // TODO: maybe we don't need this, since this is different in different graphs
         CONSTANT,
 
         OTHERS = 200,
     };
+
+    // Xingyu: To be honest, I think the following enum belongs to the proving algorithm. I think It's better to decouple the intermediate represetion (nodes, graphs...) and the proving algorithms.
     enum NodeState {
         UNVISITED = 0,
         VISITED,
@@ -27,7 +29,7 @@ class Node {
         ELIMINATED,
     } state;
 
-    static std::string to_string(NodeType node_type) {
+    static std::string to_string(NodeGenre node_type) {
         switch (node_type) {
             case INPUT:
                 return "IN";
@@ -50,19 +52,17 @@ class Node {
         }
     }
 
-    Node() : guid(generateGuid()), hash(generateHash()) {}
-    Node(std::string name, PartyDecl* party, OpVec isOutputof, OpVec isInputof,
-         NodeType type = OTHERS)
-        : guid(generateGuid()),
+    Node(int guid) : guid(guid), hash(generateHash()) {}
+    Node(int guid, std::string name, PartyDecl* party, NodeGenre type = OTHERS)
+        : guid(guid),
           hash(generateHash()),
           name(name),
           party(party),
           type(type),
           isOutputOf(isOutputof),
           isInputOf(isInputof) {}
-    Node(const Node& rhs)
+    Node(int guid, const Node& rhs)
         : state(rhs.state),
-          guid(generateGuid()),
           hash(rhs.hash),
           name(rhs.name),
           party(rhs.party),
@@ -169,17 +169,13 @@ class Node {
     }
 
    private:
-    const size_t guid;
     uint64_t hash;
 
    public:
     std::string name;
     const PartyDecl* party;
-    NodeType type;
-
-   private:
-    OpVec isOutputOf;
-    OpVec isInputOf;
+    NodeGenre type;
+    const int guid; // graph unique id
 };
 
 }  // end of namespace mpc

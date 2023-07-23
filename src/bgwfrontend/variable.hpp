@@ -57,7 +57,7 @@ public:
         return *this;
     }
 
-    mpc::Share& yield(const mpc::PartyDecl* party) const {
+    mpc::Share& yield(const mpc::PartyDecl* party, string name="") const {
         // xxy: 我感觉这个函数的返回值的类型是 Share 就有点奇怪……
         std::vector<mpc::Expression*> transferred;
         for (auto s : _shares) {
@@ -67,7 +67,7 @@ public:
                 transferred.push_back(&s->transfer(party));
             }
         }
-        return mpc::Share::reconstruct(transferred, party);
+        return mpc::Share::reconstruct(transferred, party, name);
     }
 
     friend Variable operator+(const Variable& lhs, const Variable& rhs) {

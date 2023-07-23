@@ -157,13 +157,13 @@ public:
             ctx,
             ss.str(),
             type(),
-            Equation(Operator::TRANSFER, {this}),
+            Equation(Operator::TRANSIT, {this}),
             party
         );
         return *ret;
     }
 
-    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl* party)
+    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl* party, string name="")
     {
         Type *type = shares[0]->type();
         for (int i = 1; i < shares.size(); ++i) {
@@ -183,18 +183,29 @@ public:
             }
         }
 
+        Share* ret;
         auto& ctx = Context::get_context();
-        size_t num = ctx.n_share();
-        std::stringstream ss;
-        ss << "share_" << num;
+        if (name == "") {
+            size_t num = ctx.n_share();
+            std::stringstream ss;
+            ss << "share_" << num;
 
-        auto ret = new Share(
-            ctx,
-            ss.str(),
-            type,
-            Equation(Operator::RECONSTRUCT, shares),
-            party
-        );
+            ret = new Share(
+                ctx,
+                ss.str(),
+                type,
+                Equation(Operator::RECONSTRUCT, shares),
+                party
+            );
+        } else {
+            ret = new Share(
+                ctx,
+                name,
+                type,
+                Equation(Operator::RECONSTRUCT, shares),
+                party
+            );
+        }
         return *ret;
     }
 };

@@ -15,6 +15,7 @@ class PartyDecl {
     Context& _ctx;
     const std::string _name;
     bool _corrupted = false;
+    int _id;
 
     PartyDecl(const PartyDecl&) = delete;
     PartyDecl(PartyDecl&&) = delete;
@@ -36,6 +37,11 @@ class PartyDecl {
         if (!context.register_party(name, *this)) {
             throw party_redefinition(name);
         }
+
+        static int id_cnt = 0;
+        _id = id_cnt++;
+
+        cout << "declare a party " << _id << endl;
     }
 
     /**
@@ -51,6 +57,8 @@ class PartyDecl {
      * @return Context& Context of this party.
      */
     Context& context() { return _ctx; }
+
+    int id() const { return _id; }
 
     std::string to_string() const {
         std::stringstream ss;

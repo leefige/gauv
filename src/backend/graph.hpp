@@ -2,6 +2,8 @@
 
 #include <assert.h>
 
+#include <immer/array.hpp>
+
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -13,92 +15,144 @@
 #include "common.hpp"
 #include "node.hpp"
 #include "operation.hpp"
-
 namespace mpc {
 
+/**
+ * @brief This is a *persistent* graph class, which means that it is immutable and all manipulations will return a new graph.
+ * GraphBase is unaware of corrupted parties, GraphBase is aware of corrupted parties.
+ * 
+ */
 class GraphBase {
+private:
+    int guid = 0;
+
 public:
-    NodeVec nodes;
-    OpVec edges;
+    // Since we need to transform a graph, we use a persistent adjacent list to represent a graph.
+    // Also for efficiency, we do not directly use Node but only its id as index.
+    const immer::array<OpVec> inEdgesOf, outEdgesOf;
+    const NodeVec nodes;
 
     GraphBase() {}
-    GraphBase(NodeVec nodes) : nodes(nodes) {}
-    GraphBase(const GraphBase& g) {
-        // copy
-        for (auto node : g.nodes) {
-            Node* n = new Node(*node);
-            nodes.push_back(n);
-        }
-        for (auto edge : g.edges) {
-            Operation* e = new Operation(*edge);
-            edges.push_back(e);
-        }
-        // reconstruct
-        for (int i = 0; i < g.nodes.size(); i++) {
-            nodes[i]->clear();
-            // addInputOp
-            for (auto input : g.nodes[i]->getInputs()) {
-                if (input != nullptr && !input->isEliminated()) {
-                    std::string str = input->to_string();
-                    auto it = std::find_if(edges.begin(), edges.end(),
-                        [str](const Operation* op) {
-                            return op->to_string() == str;
-                        });
-                    assert(it != edges.end());
-                    nodes[i]->addInputOp(edges[it - edges.begin()]);
-                }
-            }
-            // addOutputOp
-            for (auto output : g.nodes[i]->getOuputs()) {
-                if (output != nullptr && !output->isEliminated()) {
-                    std::string str = output->to_string();
-                    auto it = std::find_if(edges.begin(), edges.end(),
-                        [str](const Operation* op) {
-                            return op->to_string() == str;
-                        });
-                    assert(it != edges.end());
-                    nodes[i]->addOutputOp(edges[it - edges.begin()]);
-                }
-            }
-        }
-        for (int i = 0; i < g.edges.size(); i++) {
-            edges[i]->clear();
-            // addInput
-            for (auto input : g.edges[i]->getInputs()) {
-                if (input != nullptr && !input->isEliminated()) {
-                    std::string str = input->to_string();
-                    auto it = std::find_if(nodes.begin(), nodes.end(),
-                        [str](const Node* node) {
-                            return node->to_string() == str;
-                        });
-                    assert(it != nodes.end());
-                    edges[i]->addInput(nodes[it - nodes.begin()]);
-                }
-            }
-            if (g.edges[i]->getOutput() != nullptr &&
-                !g.edges[i]->getOutput()->isEliminated()) {
-                std::string str = g.edges[i]->getOutput()->to_string();
-                auto it = std::find_if(nodes.begin(), nodes.end(),
-                    [str](const Node* node) {
-                        return node->to_string() == str;
-                    });
-                assert(it != nodes.end());
-                edges[i]->setOutput(nodes[it - nodes.begin()]);
-            }
-        }
+    GraphBase(const GraphBase& g):
+        inEdgesOf(g.inEdgesOf), outEdgesOf(g.outEdgesOf), nodes(g.nodes) {}
+    GraphBase(const immer::array<OpVec> inEdgesOf, const immer::array<OpVec> outEdgesOf, const NodeVec nodes):
+        inEdgesOf(inEdgesOf), outEdgesOf(outEdgesOf), nodes(nodes) {}
+    ~GraphBase() {}
+
+    inline bool isRandomNode(Node* node) const {
+        assert(node->guid < nodes.size());
+        return inEdgesOf[node->guid].size() == 0;
     }
-    ~GraphBase() {
-        for (auto v : nodes)
-            if (v != nullptr) delete v;
-        for (auto e : edges)
-            if (e != nullptr) delete e;
+    inline bool isRandomNode(int node_id) const {
+        assert(node_id < g.nodeCnt);
+        return inEdgesOf[node_id].size() == 0;
     }
 
-    NodeVec getNodes() { return nodes; };
-    const NodeVec getNodes() const { return nodes; };
+    inline int inDeg(int node_id) const {
+        assert(node_id < nodes.size());
+        return inEdgesOf[node_id].size();
+    }
+    inline int inDeg(Node* node) const {
+        assert(node->guid < nodes.size());
+        return inEdgesOf[node->guid].size();
+    }
+    inline int outDeg(int node_id) const {
+        assert(node_id < nodes.size());
+        return outEdgesOf[node_id].size();
+    }
+    inline int outDeg(Node* node) const {
+        assert(node->guid < nodes.size());
+        return outEdgesOf[node->guid].size();
+    }
+
+    // TODO: hash
 };
 
-class Graph : public GraphBase {
+/**
+ * @brief GraphBase is unaware of corrupted parties, Graph is aware of corrupted parties. Also, there are some information (e.g. randomNodeCnt) to help the proving process are stored in Graph.
+ */
+class Graph: public GraphBase {
+public:
+    // meta data
+    const int partyCnt;
+    const int corruptedPartyCnt;
+
+    const int randomNodeCnt;
+    const int bubbleCnt;
+
+    Graph(const GraphBase& g, const int partyCnt, const int corruptedPartyCnt, const int randomNodeCnt, const int bubbleCnt):
+        GraphBase(g), partyCnt(partyCnt), corruptedPartyCnt(corruptedPartyCnt), randomNodeCnt(randomNodeCnt), bubbleCnt(bubbleCnt) {}
+
+    Graph eliminateEdge(std::shared_ptr<Operation> edge) const {
+        // 在 dst 的入边列表中把 edge 删掉
+        auto dst = edge->getOuput();
+        auto inEdgesOf = this->inEdgesOf;
+        inEdgesOf[dst->guid] = inEdgesOf[dst->guid].erase(inEdgesOf[dst->guid], edge);
+        
+        // 在 srcs 的出边列表中的 edge 删掉
+        auto outEdgesOf = this->outEdgesOf;
+        for (auto src: edge->getInputs()) {
+            outEdgesOf = outEdgesOf.erase(find(outEdgesOf[src->guid], edge));
+        }
+
+        // 计算 random nodes 的数量改变，删边之后是可能导致原来的 dst 变成 random node 的
+        int addedRandomNodesCnt = inDeg(dst) == 1;
+
+        return Graph(
+            GraphBase(inEdgesOf, outEdgesOf, nodes),
+            partyCnt,
+            corruptedPartyCnt,
+            randomNodeCnt + addedRandomNodesCnt,
+            bubbleCnt
+        );
+    }
+    Graph eliminateEdges(const std::vector<std::shared_ptr<Operation>>& edges) const {
+        // 这个函数其实反复应用上面那个 eliminateEdge
+        GraphBase g(*this);
+        for (auto edge: edges)
+            g = g.eliminateEdge(edge);
+        return g;
+    }
+    Graph addEdge(std::shared_ptr<Operation> edge) const {
+        // 在 dst 的入边列表里加入 edge
+        auto dst = edge->getOutput();
+        auto inEdgesOf = this->inEdgesOf;
+        inEdgesOf[dst->guid] = inEdgesOf[dst->guid].push_back(edge);
+
+        // 在 srcs 的出边列表里加入 edge
+        auto outEdgesOf = this->outEdgesOf;
+        for (auto src: edge->getInputs()) {
+            outEdgesOf = outEdgesOf[src->guid].push_back();
+        }
+
+        // 计算 random nodes 的数量的改变，加边之后可能导致原先是 random node 的 dst 变得不再是了
+        int eliminatedRandomNodesCnt = inDeg(dst) ==0;
+
+        // 计算 bubble 数量的改变，如果 dst 是 corrupted party 的 input 或者 output 的话，我们要将其视为 bubble
+        int addedBubbleCnt = dst->party->is_corrupted() && (dst->isInput() || dst->isOutput());
+
+        return Graph(
+            GraphBase(inEdgesOf, outEdgesOf, nodes),
+            partyCnt,
+            corruptedPartyCnt,
+            randomNodeCnt - eliminatedRandomNodesCnt,
+            bubbleCnt + addedBubbleCnt
+        );
+    }
+    Graph eliminateNode(Node* node) const {
+        Graph g = this->eliminateEdges(inEdgesOf[node->guid]); // 删掉 node 的入边
+        g = g.eliminateEdges(outEdgesOf[node->guid]); // 删掉 node 的出边
+        return Graph(
+            GraphBase(g.inEdgesOf, g.outEdgesOf, g.nodes.set(node->guid, nullptr)), // 在节点列表 nodes 中删掉 node
+            g.partyCnt,
+            g.corruptedPartyCnt,
+            g.randomNodeCnt,
+            g.bubbleCnt
+        )
+    }
+}
+
+class GraphProver : public Graph {
     // frontend -> backend map
     std::unordered_map<const Expression*, Node*> frontBackMap;
     // polynomial degrees
@@ -128,7 +182,7 @@ public:
         if (!node->party->is_corrupted()) return true;
         Operation* edge = nullptr;
         for (auto e : node->getInputs()) {
-            if (!e->isEliminated() && e->getType() == Operator::TRANSFER) {
+            if (!e->isEliminated() && e->getType() == Operator::TRANSIT) {
                 edge = e;
                 break;
             }
@@ -140,7 +194,7 @@ public:
     static auto traceOriginalParty(Node* node) {
         Operation* edge = nullptr;
         for (auto e : node->getInputs()) {
-            if (!e->isEliminated() && e->getType() == Operator::TRANSFER) {
+            if (!e->isEliminated() && e->getType() == Operator::TRANSIT) {
                 edge = e;
                 break;
             }
@@ -154,7 +208,7 @@ public:
     static auto traceTargetParty(Node* node) {
         Operation* edge = nullptr;
         for (auto e : node->getOuputs()) {
-            if (!e->isEliminated() && e->getType() == Operator::TRANSFER) {
+            if (!e->isEliminated() && e->getType() == Operator::TRANSIT) {
                 edge = e;
                 break;
             }
@@ -193,9 +247,9 @@ public:
 
     std::vector<HistEntry> transformTape;
 
-    Graph() {}
-    Graph(NodeVec nodes) : GraphBase(nodes) {}
-    ~Graph() {
+    GraphProver() {}
+    GraphProver(NodeVec nodes) : Graph(nodes) {}
+    ~GraphProver() {
         std::set<Node*> node_set;
         for (auto v : nodes) node_set.insert(v);
         // remove unreferenced nodes
@@ -207,7 +261,7 @@ public:
 
     size_t getT() { return T; }
 
-    int nodeSize() const {
+    int nodeCnt() const {
         int count = 0;
         for (auto nd : nodes)
             if (!nd->isEliminated()) count++;
@@ -223,8 +277,6 @@ public:
 
     Potential potential() const {
         if (!computePotential) return Potential{0, 0, 0};
-        // first term
-        int numNodes = nodeSize();
         // init search
         constexpr uint8_t FLAG_VISITED = 1;
         constexpr uint8_t FLAG_HONEST_TARGET = 2;
@@ -233,7 +285,12 @@ public:
         std::map<Node*, int> mapNodeIndex;
         uint8_t* flags = new uint8_t[len];
         std::queue<int> q;
-        // from corrupted
+        // first term: the number of bubbles
+        int numBubbles = 0;
+        for (int i = 0; i < len; i++)
+            if (nodes[i]->state == Node::BUBBLE)
+                ++numBubbles;
+        // second term: the honest parties' nodes that are reachable to the corrupted parties
         for (int i = 0; i < len; i++) {
             auto nd = nodes[i];
             mapNodeIndex[nd] = i;
@@ -257,42 +314,17 @@ public:
                 for (auto v : e->getInputs()) q.push(mapNodeIndex[v]);
             }
         }
-        // from bubble
-        for (int i = 0; i < len; i++) {
-            auto nd = nodes[i];
-            mapNodeIndex[nd] = i;
-            flags[i] &= ~FLAG_VISITED;
-            if (nd->isEliminated()) {
-                flags[i] |= FLAG_VISITED;
-            } else {
-                if (nd->state == Node::BUBBLE) q.push(i);
-            }
-        }
-        // do search
-        while (!q.empty()) {
-            int i = q.front();
-            q.pop();
-            auto nd = nodes[i];
-            if (nd->isEliminated() || (flags[i] & FLAG_VISITED)) continue;
-            flags[i] |= FLAG_VISITED | FLAG_BUBBLE_TARGET;
-            for (auto e : nd->getOuputs()) {
-                if (e->isEliminated()) continue;
-                q.push(mapNodeIndex[e->getOutput()]);
-            }
-        }
         // sum up result
-        int numHonestNodes = 0;
         int numReachableNodes = 0;
         for (int i = 0; i < len; i++) {
-            if (flags[i] & FLAG_HONEST_TARGET) {
-                numHonestNodes++;
-            }
             if (flags[i] & FLAG_BUBBLE_TARGET) {
                 numReachableNodes++;
             }
         }
         delete[] flags;
-        return Potential{numNodes, numHonestNodes, numReachableNodes};
+        // third term: the number of total nodes
+        int numNodes = nodeCnt();
+        return Potential{numBubbles, numReachableNodes, numNodes};
     }
 
     Node* importFrontend(const Expression* exp) {
@@ -345,7 +377,7 @@ public:
             }
             // placeholders not secret are not recorded
             break;
-        case Operator::TRANSFER:
+        case Operator::TRANSIT:
         case Operator::ADD:
         case Operator::SUB:
         case Operator::MUL:
@@ -441,7 +473,7 @@ public:
         return node;
     }
 
-    friend std::ostream& operator<<(std::ostream& o, const Graph& p) {
+    friend std::ostream& operator<<(std::ostream& o, const GraphProver& p) {
         NodeVec validNodes;
         OpVec validEdges;
         for (auto nd : p.nodes) {
@@ -574,21 +606,51 @@ public:
     bool simulatePolynomial(Node* node) {
         if (node->party->is_corrupted()) return false;
         NodeVec srcs, dests;
-        srcs.push_back(node);
+        if (!node->isRandom())
+            srcs.push_back(node);
         OpVec old_edges;
         // FIXME: all edges are from the same polynomial is assumed
         for (auto e : node->getOuputs()) {
             if (!e->isEliminated() && !e->isGenerated() &&
                 e->getType() == Operator::EVAL) {
                 old_edges.push_back(e);
-                auto node = e->getOutput();
-                auto party = traceTargetParty(node);
+                auto n = e->getOutput();
+                auto party = traceTargetParty(n);
                 if (srcParties.count(party)) {
-                    srcs.push_back(node);
-                } else {
-                    dests.push_back(node);
+                    srcs.push_back(n);
+                } else if (node->isRandom()
+                                // && party->id() <= T
+                ) {
+                    // 如果 secret 随机的话，我们就需要以 T + 1 个 share 作为 srcs
+                    srcs.push_back(n);
+
+                    cout << "Here we simulate a random sharing." << endl;
+                }
+                else {
+                    dests.push_back(n);
                 }
             }
+        }
+        // if (node->name == "r_2_bin" || node->name == "r_1_bin") {
+        if (node->name == "share_177") {
+            cout << "when trying to simulatePolynomial of " << node->name << ": ";
+            if (old_edges.empty()) {
+                cout << "there are no old_edges" << endl;
+            }
+            if (srcs.size() != T + 1) {
+                cout << "the size of srcs is " << srcs.size() << ", they are";
+                for (Node* src: srcs)
+                    cout << " " << src->name << ",";
+                cout << endl;
+            }
+            for (auto d : srcs) {
+                if (d->isRandom()) {
+                    cout << d->name << " is random" << endl;
+                }
+                if (d != node && d->getValidInDegrees() != 1) {
+                    cout << d->name << " has " << d->getValidInDegrees() << " valid in-degrees" << endl;
+                }
+            }    
         }
         if (old_edges.empty()) return false;
         if (srcs.size() != T + 1) return false;
@@ -682,7 +744,7 @@ private:
         // reverse connections
         edge->markEliminated();
         Operation* new_edge =
-            new Operation(Operator::TRANSFER, {node}, src_node);
+            new Operation(Operator::TRANSIT, {node}, src_node);
         new_edge->markGenerated();
         edges.push_back(new_edge);
         src_node->addInputOp(new_edge);
@@ -717,7 +779,7 @@ public:
         Operation* edge = nullptr;
         for (auto e : node->getInputs()) {
             if (!e->isEliminated() && !e->isGenerated() &&
-                e->getType() == Operator::TRANSFER) {
+                e->getType() == Operator::TRANSIT) {
                 edge = e;
                 break;
             }
@@ -822,7 +884,7 @@ public:
             // reverse transit
             for (auto edge : dst->getInputs())
                 if (!edge->isEliminated() &&
-                    edge->getType() == Operator::TRANSFER) {
+                    edge->getType() == Operator::TRANSIT) {
                     reverseTransitByEdge(edge);
                     auto src = edge->getInputs().front();
                     src->markPotential();
@@ -836,28 +898,29 @@ public:
         return true;
     }
 
-    bool tryProving(std::vector<std::string>& histories) {
+    GraphProver* tryProving(std::vector<std::string>& histories) {
         if (!hasBubble()) {
-            return true;
+            return this;
         }
 
         std::string hashString = getHashString();
         for (auto history : histories) {
             if (history == hashString) {
-                return false;
+                return nullptr;
             }
         }
 
         histories.push_back(hashString);
+        GraphProver* simulator = nullptr;
 
         for (int i = 0; i < nodes.size(); i++) {
             if (nodes[i]->state == Node::POTENTIAL ||
                 nodes[i]->state == Node::BUBBLE) {
-                Graph* g_1 = new Graph(*this);
+                GraphProver* g_1 = new GraphProver(*this);
                 if (g_1->eliminateTailingNode(g_1->nodes[i])) {
                     std::cout << "TAIL_NODE" << std::endl;
-                    if (g_1->tryProving(histories)) {
-                        return true;
+                    if ((simulator = g_1->tryProving(histories)) != nullptr) {
+                        return simulator;
                     }
                 }
             }
@@ -865,11 +928,11 @@ public:
 
         for (int i = 0; i < nodes.size(); i++) {
             if (nodes[i]->state != Node::ELIMINATED) {
-                Graph* g_2 = new Graph(*this);
+                GraphProver* g_2 = new GraphProver(*this);
                 if (g_2->reverseOutputReconstruct(g_2->nodes[i])) {
                     std::cout << "REVERSE_OUTPUT_RECONSTRUCT" << std::endl;
-                    if (g_2->tryProving(histories)) {
-                        return true;
+                    if ((simulator = g_2->tryProving(histories)) != nullptr) {
+                        return simulator;
                     }
                 }
             }
@@ -877,32 +940,38 @@ public:
 
         for (int i = 0; i < nodes.size(); i++) {
             if (nodes[i]->state != Node::ELIMINATED) {
-                Graph* g_3 = new Graph(*this);
+                GraphProver* g_3 = new GraphProver(*this);
                 if (g_3->simulatePolynomial(g_3->nodes[i])) {
                     std::cout << "SIM_POLY" << std::endl;
-                    if (g_3->tryProving(histories)) {
-                        return true;
+                    if ((simulator = g_3->tryProving(histories)) != nullptr) {
+                        return simulator;
                     }
                 }
-                Graph* g_4 = new Graph(*this);
+                GraphProver* g_4 = new GraphProver(*this);
                 if (g_4->reverseReconstruct(g_4->nodes[i])) {
                     std::cout << "REVERSE_RECONSTRUCT" << std::endl;
-                    if (g_4->tryProving(histories)) {
-                        return true;
+                    if ((simulator = g_4->tryProving(histories)) != nullptr) {
+                        return simulator;
                     }
                 }
-                Graph* g_5 = new Graph(*this);
-                if (g_5->reverseTransit(g_5->nodes[i])) {
-                    std::cout << "REVERSE_TRANSIT" << std::endl;
-                    if (g_5->tryProving(histories)) {
-                        return true;
+                GraphProver* g_5 = new GraphProver(*this);
+                if (g_5->reverseAddition(g_5->nodes[i])) {
+                    std::cout << "REVERSE_ADDITION" << std::endl;
+                    if ((simulator = g_5->tryProving(histories)) != nullptr) {
+                        return simulator;
                     }
                 }
             }
         }
 
         std::cout << "GO_BACK" << std::endl;
-        return false;
+        return nullptr;
+    }
+
+    bool tryProvingByGreedyStrategy() {
+        // 每次选一个让秩函数下降最多的 transformation 来做。
+        computePotential = true;
+        return true;
     }
 
     bool tryProvingByPotential() {
@@ -926,13 +995,14 @@ public:
             if (transformed) continue;
             for (auto node : nodes)
                 if (node->state != Node::ELIMINATED) {
-                    if (simulatePolynomial(node) || reverseReconstruct(node) ||
-                        reverseTransit(node)) {
+                    if (simulatePolynomial(node) || reverseReconstruct(node) || reverseAddition(node)) {
                         transformed = true;
                         break;
                     }
                 }
-            if (!transformed) return false;
+            if (!transformed) {
+                return false;
+            }
         }
         return true;
     }

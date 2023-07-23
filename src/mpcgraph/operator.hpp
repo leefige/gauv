@@ -10,7 +10,7 @@ enum class Operator : unsigned int {
     NONE = 0,
 
     INPUT = 100,
-    TRANSFER = 101,
+    TRANSIT = 101,
 
     ADD = 200,
     SUB = 201,
@@ -20,7 +20,7 @@ enum class Operator : unsigned int {
 
     EVAL = 300,
     RECONSTRUCT = 301,
-    POLILIZE = 302,
+    POLILIZE = 302, // 2023-07-21 17:50:12 事实上这个 operator 已经不会出现在图里了，因为我们在 bgwfrontend 会直接使用 EVAL
 
     TYPECAST = 400,
 };
@@ -34,8 +34,8 @@ inline std::ostream& operator<<(std::ostream& o, const Operator& op)
     case Operator::INPUT:
         o << "INPUT";
         break;
-    case Operator::TRANSFER:
-        o << "TRANSFER";
+    case Operator::TRANSIT:
+        o << "TRANSIT";
         break;
     case Operator::ADD:
         o << "ADD";
@@ -63,7 +63,7 @@ inline std::ostream& operator<<(std::ostream& o, const Operator& op)
         break;
     case Operator::TYPECAST:
         o << "TYPECAST";
-
+        break;
     default:
         o << "<UNKNOWN_OP>";
         break;

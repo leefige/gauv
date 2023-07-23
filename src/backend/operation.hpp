@@ -72,6 +72,8 @@ class Operation {
     Operator type;
     NodeVec inputs;
     Node* output;
+
+    // 事实上，除了 operator 之外，严格来讲我们还需要有 argument，比如说数乘具体是乘多少，插值具体是在哪些点上插值，这里简单起见我们可以先忽略 argument。
 };
 
 }  // end of namespace mpc
