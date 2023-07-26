@@ -4,3 +4,6 @@
 #include "node.hpp"
 #include "operation.hpp"
 #include "node_operation.hpp"
+#include "graph_builder.hpp"
+#include "transformer.hpp"
+#include "prover.hpp"

@@ -14,8 +14,6 @@ class Node {
 
         INPUT = 100,
         OUTPUT,
-        RANDOM, // TODO: maybe we don't need this, since this is different in different graphs
-        CONSTANT,
 
         OTHERS = 200,
     };
@@ -35,8 +33,6 @@ class Node {
                 return "IN";
             case OUTPUT:
                 return "OUT";
-            case RANDOM:
-                return "RAND";
             default:
                 return "-";
         }
@@ -52,77 +48,40 @@ class Node {
         }
     }
 
-    Node(int guid) : guid(guid), hash(generateHash()) {}
-    Node(int guid, std::string name, PartyDecl* party, NodeGenre type = OTHERS)
-        : guid(guid),
-          hash(generateHash()),
+    Node(): hash(generateHash()) {}
+    Node(std::string name, PartyDecl* party, NodeGenre type = OTHERS)
+        : hash(generateHash()),
           name(name),
           party(party),
-          type(type),
-          isOutputOf(isOutputof),
-          isInputOf(isInputof) {}
+          type(type) {}
+    Node(const Node& rhs)
+        : guid(rhs.guid),
+          hash(rhs.hash),
+          state(rhs.state),
+          name(rhs.name),
+          party(rhs.party),
+          type(rhs.type) {}
+    Node(int guid) : hash(generateHash()), guid(guid) {}
+    Node(int guid, std::string name, PartyDecl* party, NodeGenre type = OTHERS)
+        : hash(generateHash()),
+          guid(guid),
+          name(name),
+          party(party),
+          type(type) {}
     Node(int guid, const Node& rhs)
         : state(rhs.state),
           hash(rhs.hash),
+          guid(guid),
           name(rhs.name),
           party(rhs.party),
-          type(rhs.type),
-          isOutputOf(rhs.isOutputOf),
-          isInputOf(rhs.isInputOf) {}
+          type(rhs.type) {}
 
     ~Node() {}
 
-    void clear() {
-        isOutputOf.clear();
-        isInputOf.clear();
-    }
-
     const std::string& getName() const { return name; }
-
-    void setInputOps(OpVec inputOps) { isOutputOf = inputOps; }
-    void setOutputOps(OpVec outputOps) { isInputOf = outputOps; }
-
-    void addInputOp(Operation* inputOp) { isOutputOf.push_back(inputOp); }
-    void addOutputOp(Operation* outputOp) { isInputOf.push_back(outputOp); }
-
-    OpVec& getInputs() { return isOutputOf; }
-    const OpVec& getInputs() const { return isOutputOf; }
-    OpVec& getOutputs() { return isInputOf; }
-    const OpVec& getOuputs() const { return isInputOf; }
-    Operation* firstValidInput() const;
-    Operation* firstValidOutput() const;
-
-    int getInDegrees() { return isOutputOf.size(); }
-    int getOutDegrees() { return isInputOf.size(); }
-
-    int getValidInDegrees();
-    int getValidOutDegrees();
 
     bool isInput() { return type == INPUT; }
     bool isOutput() { return type == OUTPUT; }
-    bool isRandom() { return type == RANDOM; }
-    bool isConstant() { return type == CONSTANT; }
-
-    // Don't use! Mark state instead of removing.
-    int removeOutputOp(Operation* outputOp) {
-        for (auto it = isInputOf.begin(); it != isInputOf.end(); it++) {
-            if (*it == outputOp) {
-                isInputOf.erase(it);
-                return isInputOf.size();
-            }
-        }
-        return -1;
-    }
-    // Don't use! Mark state instead of removing.
-    int removeInputOp(Operation* inputOp) {
-        for (auto it = isOutputOf.begin(); it != isOutputOf.end(); it++) {
-            if (*it == inputOp) {
-                isOutputOf.erase(it);
-                return isOutputOf.size();
-            }
-        }
-        return -1;
-    }
 
     bool markPotential() {
         if (state != BUBBLE && state != ELIMINATED/* &&
@@ -172,10 +131,10 @@ class Node {
     uint64_t hash;
 
    public:
+    const int guid = -1; // graph unique id
     std::string name;
     const PartyDecl* party;
     NodeGenre type;
-    const int guid; // graph unique id
 };
 
 }  // end of namespace mpc

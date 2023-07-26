@@ -5,7 +5,6 @@
 
 #include "../../src/backend/builtin.hpp"
 #include "../../src/bgwfrontend/builtin.hpp"
-#include "prove_helper.hpp"
 
 using namespace mpc;
 using namespace std;
@@ -35,11 +34,14 @@ void test_bgw_add(size_t I, size_t T, size_t N, size_t M, int verbose = 1) {
         protocol = protocol + var;
     }
 
-    Graph graph;
+    vector<Expression*> outputs;
     for (int i = 0; i < N; i++)
-        graph.importFrontend(&protocol.yield(parties[i]));
+        outputs.push_back(&protocol.yield(parties[i]));
 
-    prove_by_hint(graph, verbose);
+    GraphBaseBuilder builder(outputs);
+    GraphBase graph_base = bulider.build();
+    Prover prover(graph_base, equivalent_classes, parties, T, verbose);
+    prover.prove(I);
 }
 
 int main(int argc, char* argv[]) {

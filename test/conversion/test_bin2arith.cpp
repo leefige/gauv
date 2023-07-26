@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
         cout << "Usage: " << " I(the number of corrupted parties) T(the threshold) N(the number of parties)" << endl;
         return 0;
     }
-    I = atoi(argv[1]);
+    I = atoi(argv[1]); // 这里我们最好也还支持可变的 I
     T = atoi(argv[2]);
     N = atoi(argv[3]);
 
@@ -28,7 +28,6 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < N; ++i) {
         parties.push_back(new PartyDecl(ctx, "p" + to_string(i)));
     }
-    for (int i = 0; i < I; ++i) parties[i]->set_corrupted();
 
     auto c2 = Constant(ctx, "const_-2");
 
@@ -103,9 +102,17 @@ int main(int argc, char* argv[]) {
         }
         outputs.push_back(&output_sharing_i.yield(parties[i], "beta_" + std::to_string(i)));
     }
+
+    // 把 party 分成若干个等价类
+    std::unordered_set<PartyDecl *> class0({ parties[0] });
+    std::unordered_set<PartyDecl *> class1;
+    for (int i = 1; i < T; ++i) class1.push_back(parties[i]);
+    std::unordered_set<PartyDecl *> class2;
+    for (int i = T; i < N; ++i) class2.push_back(parties[i]);
+    std::vector<std::unordered_set<PartyDecl *>> equivalent_classes({class0, class1, class2});
     
-    auto graph = make_shared<GraphProver>();
-    for (auto output: outputs)
-        graph->importFrontend(output);
-    prove_by_potential(*graph);
+    GraphBaseBuilder builder(outputs);
+    GraphBase graph_base = builder.build();
+    Prover prover(graph_base, equivalent_classes, parties, T, verbose);
+    prover.prove(I);
 }

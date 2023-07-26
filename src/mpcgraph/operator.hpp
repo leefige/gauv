@@ -19,7 +19,7 @@ enum class Operator : unsigned int {
     SCALARMUL = 204,
 
     EVAL = 300,
-    RECONSTRUCT = 301,
+    RECONSTRUCT = 301, // Xingyu：自然，reconstruct 也是可以换成 EVAL 的，不过这里我们方便起见，还是暂且保留这个 RECONSTRUCT 吧
     POLILIZE = 302, // 2023-07-21 17:50:12 事实上这个 operator 已经不会出现在图里了，因为我们在 bgwfrontend 会直接使用 EVAL
 
     TYPECAST = 400,

@@ -4,6 +4,8 @@
 #include <cassert>
 #include <immer/flex_vector.hpp>
 #include <memory>
+#include <sstream>
+
 namespace mpc {
 
 class Node;
@@ -26,6 +28,15 @@ inline int find(immer::flex_vector<T> vec, T item) {
         if (vec[index] == item)
             return index;
     return vec.size();
+}
+
+typedef std::tuple<int, int, int> Potential;
+
+static std::string to_string(Potential p) {
+    std::stringstream ss;
+    ss << "(" << std::get<0>(p) << "," << std::get<1>(p) << ","
+        << std::get<2>(p) << ")";
+    return ss.str();
 }
 
 }  // end of namespace mpc
