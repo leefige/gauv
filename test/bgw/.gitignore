@@ -4,3 +4,4 @@
 !*.cpp
 !Makefile
 !*.md
+!CMakeLists.txt
