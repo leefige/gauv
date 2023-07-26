@@ -2,11 +2,26 @@
 
 Please refer to [BGW test readme](test/bgw/README.md).
 
+## Clone & Dependency
+
+Since we rely on a third-party library `immer`, after cloning this repository, you could use the following commands at the root path of this repository to fetch `immer`.
+```bash
+git submodule init
+git submodule update
+```
+
+Then, please copy `immer/immer` somewhere in your *include* path, for example,
+```bash
+sudo cp -r immer/immer/ /usr/local/include
+```
+
 ## Build
 
 ```sh
-cd test/bgw
-make test_add test_mul test_scalable
+mkdir -p build && cd build
+cmake ..
+cmake --build .
+# cmake -- build . --target test_add # for some specific target
 ```
 
 ## BGW

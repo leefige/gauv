@@ -2,9 +2,10 @@
 
 #include <cstdlib>
 #include <cassert>
-#include <immer/flex_vector.hpp>
 #include <memory>
 #include <sstream>
+
+#include <immer/flex_vector.hpp>
 
 namespace mpc {
 
