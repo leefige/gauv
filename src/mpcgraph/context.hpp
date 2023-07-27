@@ -111,7 +111,7 @@ public:
      * @return bool True if successful, false if the name of this secret has been
      * rigistered in this context.
      */
-    bool register_secret(const std::string& name, Type* type, Secret& secret)
+    bool register_secret(const std::string& name, Secret& secret)
     {
         return _register_ref_to_context(name, secret, _secrets);
     }

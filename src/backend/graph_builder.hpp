@@ -3,24 +3,23 @@
 #include "graph.hpp"
 #include "immer/flex_vector.hpp"
 
-namespace mpc
-{
+namespace mpc {
 class GraphBaseBuilder {
     std::vector<std::shared_ptr<Node>> nodes;
     std::vector<std::vector<std::shared_ptr<Operation>>> inEdgesOf, outEdgesOf;
     std::vector<Expression*> outputs;
 
-    shared_ptr<Node> newNode(std::string name, const PartyDecl* party, Node::NodeGenre type) {
+    std::shared_ptr<Node> newNode(std::string name, const PartyDecl* party, Node::NodeGenre type) {
         int guid = nodes.size();
+
+        assert(guid == (int)nodes.size());
+        assert(guid == (int)inEdgesOf.size());
+        assert(guid == (int)outEdgesOf.size());
 
         auto node = std::make_shared<Node>(guid, name, party, type);
         nodes.push_back(node);
         inEdgesOf.push_back(std::vector<std::shared_ptr<Operation>>());
         outEdgesOf.push_back(std::vector<std::shared_ptr<Operation>>());
-
-        assert(guid == nodes.size());
-        assert(guid == inEdgesOf.size());
-        assert(guid == inEdgesOf.size());
 
         return node;
     }
@@ -111,7 +110,6 @@ public:
                 outEdgesOf[nd->guid].push_back(operation);
             }
 
-            nodes.push_back(node);
             break;
         case Operator::POLILIZE:
             // 对于多项式节点我们不调用 newNode，因为它以及 POLILIZE 这条边都是临时的，在上面 EVAL 那个 case 里会被取代掉
@@ -126,12 +124,11 @@ public:
                 operation->addInput(old_node);
                 // old_node->addOutputOp(operation);
             }
-            for (int i = 0; i < poly->degree(); i++) {
+            for (size_t i = 0; i < poly->degree(); i++) {
                 // make a random node first
                 auto random_node = newNode(poly->name() + "_coeff_" + std::to_string(i), poly->party(), Node::OTHERS);
                 // random_node->addOutputOp(operation);
                 operation->addInput(random_node);
-                nodes.push_back(random_node);
             }
             operation->setOutput(node);
             poly_map[node] = operation;

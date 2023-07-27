@@ -18,15 +18,6 @@ class Node {
         OTHERS = 200,
     };
 
-    // Xingyu: To be honest, I think the following enum belongs to the proving algorithm. I think It's better to decouple the intermediate represetion (nodes, graphs...) and the proving algorithms.
-    enum NodeState {
-        UNVISITED = 0,
-        VISITED,
-        POTENTIAL,
-        BUBBLE,
-        ELIMINATED,
-    } state;
-
     static std::string to_string(NodeGenre node_type) {
         switch (node_type) {
             case INPUT:
@@ -37,39 +28,49 @@ class Node {
                 return "-";
         }
     }
-    static std::string to_string(NodeState node_state) {
-        switch (node_state) {
-            case BUBBLE:
-                return "BUBBLE";
-            case POTENTIAL:
-                return "P";
-            default:
-                return "-";
-        }
-    }
+
+
+    // Xingyu: To be honest, I think the following enum belongs to the proving algorithm. I think It's better to decouple the intermediate represetion (nodes, graphs...) and the proving algorithms.
+    // enum NodeState {
+    //     UNVISITED = 0,
+    //     VISITED,
+    //     POTENTIAL,
+    //     BUBBLE,
+    //     ELIMINATED,
+    // } state;
+    // static std::string to_string(NodeState node_state) {
+    //     switch (node_state) {
+    //         case BUBBLE:
+    //             return "BUBBLE";
+    //         case POTENTIAL:
+    //             return "P";
+    //         default:
+    //             return "-";
+    //     }
+    // }
 
     Node(): hash(generateHash()) {}
-    Node(std::string name, PartyDecl* party, NodeGenre type = OTHERS)
+    Node(std::string name, const PartyDecl*& party, NodeGenre type = OTHERS)
         : hash(generateHash()),
           name(name),
           party(party),
           type(type) {}
     Node(const Node& rhs)
-        : guid(rhs.guid),
+        : // state(rhs.state),
           hash(rhs.hash),
-          state(rhs.state),
+          guid(rhs.guid),
           name(rhs.name),
           party(rhs.party),
           type(rhs.type) {}
     Node(int guid) : hash(generateHash()), guid(guid) {}
-    Node(int guid, std::string name, PartyDecl* party, NodeGenre type = OTHERS)
+    Node(int guid, std::string name, const PartyDecl*& party, NodeGenre type = OTHERS)
         : hash(generateHash()),
           guid(guid),
           name(name),
           party(party),
           type(type) {}
     Node(int guid, const Node& rhs)
-        : state(rhs.state),
+        : // state(rhs.state),
           hash(rhs.hash),
           guid(guid),
           name(rhs.name),
@@ -83,20 +84,20 @@ class Node {
     bool isInput() { return type == INPUT; }
     bool isOutput() { return type == OUTPUT; }
 
-    bool markPotential() {
-        if (state != BUBBLE && state != ELIMINATED/* &&
-            getValidOutDegrees() == 0*/) {
-            state = POTENTIAL;
-            return true;
-        }
-        return false;
-    }
+    // bool markPotential() {
+    //     if (state != BUBBLE && state != ELIMINATED/* &&
+    //         getValidOutDegrees() == 0*/) {
+    //         state = POTENTIAL;
+    //         return true;
+    //     }
+    //     return false;
+    // }
 
-    bool markEliminated() {
-        state = ELIMINATED;
-        return true;
-    }
-    bool isEliminated() const { return state == ELIMINATED; }
+    // bool markEliminated() {
+    //     state = ELIMINATED;
+    //     return true;
+    // }
+    // bool isEliminated() const { return state == ELIMINATED; }
 
     /* bool checkValid() {
         // FIXME: is this intended?
@@ -122,8 +123,7 @@ class Node {
 
     std::string to_string() const {
         std::stringstream ss;
-        ss << "<node[" << party->name() << ", " << to_string(type) << ", "
-           << to_string(state) << "] " << name << ">";
+        ss << "<node[" << party->name() << ", " << to_string(type) << "] " << name << ">";
         return ss.str();
     }
 

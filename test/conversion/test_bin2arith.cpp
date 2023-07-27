@@ -5,7 +5,6 @@
 #include "../../src/backend/builtin.hpp"
 #include "../../src/mpcgraph/builtin.hpp"
 #include "../../src/bgwfrontend/builtin.hpp"
-#include "../bgw/prove_helper.hpp"
 
 using namespace mpc;
 using namespace std;
@@ -86,7 +85,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < T; ++i) {
         reshared_beta_sharings.push_back(new bgw::Variable(bgw_ctx, *betas[i]));
     }
-    std::vector<Share *> outputs;
+    std::vector<const Expression *> outputs;
     for (int i = T; i < N; ++i) {
         bgw::Variable output_sharing_i(bgw_ctx);
         for (int j = 0; j < T; ++j) {
@@ -106,13 +105,13 @@ int main(int argc, char* argv[]) {
     // 把 party 分成若干个等价类
     std::unordered_set<PartyDecl *> class0({ parties[0] });
     std::unordered_set<PartyDecl *> class1;
-    for (int i = 1; i < T; ++i) class1.push_back(parties[i]);
+    for (int i = 1; i < T; ++i) class1.insert(parties[i]);
     std::unordered_set<PartyDecl *> class2;
-    for (int i = T; i < N; ++i) class2.push_back(parties[i]);
+    for (int i = T; i < N; ++i) class2.insert(parties[i]);
     std::vector<std::unordered_set<PartyDecl *>> equivalent_classes({class0, class1, class2});
     
     GraphBaseBuilder builder(outputs);
     GraphBase graph_base = builder.build();
-    Prover prover(graph_base, equivalent_classes, parties, T, verbose);
+    Prover prover(graph_base, equivalent_classes, parties, T);
     prover.prove(I);
 }

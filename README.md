@@ -17,11 +17,20 @@ sudo cp -r immer/immer/ /usr/local/include
 
 ## Build
 
+调试版：
+
 ```sh
 mkdir -p build && cd build
-cmake ..
-cmake --build .
-# cmake -- build . --target test_add # for some specific target
+cmake .. -B Debug -DCMAKE_BUILD_TYPE=Debug
+cmake --build Debug --target test_add # test_add 可以换成任何想测试的 cpp 文件，比如 test_bin2arith
+```
+
+正式版：
+
+```sh
+mkdir -p build && cd build
+cmake .. -B Release -DCMAKE_BUILD_TYPE=Release
+cmake --build Release
 ```
 
 ## BGW
@@ -45,3 +54,4 @@ WARNING: cannot be correctly proved yet.
 
 - [ ] Xingyu feels that if it is possible to execute the graph, its design and implementation will be much better, and omitted details (e.g. the value range of this node) could be discovered and perfected.
 - [ ] Xingyu feels that more documentation will make our lives better.
+- [ ] Xingyu feels that we may need a more robust logging system. Maybe some third party logging library could help us, for example, [spdlog](https://github.com/gabime/spdlog/).

@@ -2,6 +2,8 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <vector>
+#include <unordered_set>
 
 #include "../../src/backend/builtin.hpp"
 #include "../../src/bgwfrontend/builtin.hpp"
@@ -14,33 +16,39 @@ void test_bgw_add(size_t I, size_t T, size_t N, size_t M, int verbose = 1) {
     Context& ctx = Context::get_context();
 
     std::vector<PartyDecl*> parties;
-    std::vector<Secret*> secrets;
-    for (int i = 0; i < N; i++) {
+    std::vector<Expression*> secrets;
+    for (unsigned i = 0; i < N; i++) {
         auto party = new PartyDecl(ctx, "p" + to_string(i));
         parties.push_back(party);
-        for (int j = 0; j < M; j++) {
+        for (unsigned j = 0; j < M; j++) {
             auto secret = new Secret(ctx, "x" + to_string(i * M + j), ArithFieldType::get_arith_field_type(), party);
             secrets.push_back(secret);
         }
     }
-    for (int i = 0; i < I; i++) parties[i]->set_corrupted();
+    for (unsigned i = 0; i < I; i++) parties[i]->set_corrupted();
 
     bgw::Context bgw_ctx(parties, T);
     std::vector<bgw::Variable> x;
     // protocol described here
     bgw::Variable protocol(bgw_ctx, *secrets[0]);
-    for (int i = 1; i < N * M; i++) {
+    for (unsigned i = 1; i < N * M; i++) {
         bgw::Variable var(bgw_ctx, *secrets[i]);
         protocol = protocol + var;
     }
 
     vector<Expression*> outputs;
-    for (int i = 0; i < N; i++)
+    for (unsigned i = 0; i < N; i++)
         outputs.push_back(&protocol.yield(parties[i]));
 
     GraphBaseBuilder builder(outputs);
-    GraphBase graph_base = bulider.build();
-    Prover prover(graph_base, equivalent_classes, parties, T, verbose);
+    GraphBase graph_base = builder.build();
+    Prover prover(graph_base,
+        vector<unordered_set<PartyDecl*>>{
+            unordered_set<PartyDecl*>(parties.begin(), parties.end())
+        },
+        parties,
+        T,
+        verbose);
     prover.prove(I);
 }
 

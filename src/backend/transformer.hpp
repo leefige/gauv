@@ -1,6 +1,6 @@
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 
 #include <vector>
 #include <unordered_set>
@@ -33,13 +33,16 @@ public:
      * @return false 
      */
     bool isRewritableSecret(const Graph &g, int node_id, std::unordered_set<const PartyDecl*> srcParties) {
-        assert(node_id < g.nodes.size());
+        assert(node_id < (int)g.nodes.size());
         assert(g.T < g.partyCnt); // T + 1 <= N
 
-        if (g.outEdgesOf[node_id] != g.partyCnt) // 是否恰好有 N 条出边
+        if (g.outEdgesOf[node_id].size() != g.partyCnt) // 是否恰好有 N 条出边
             return false;
         std::unordered_set<int> src_ids;
         std::unordered_set<const PartyDecl*> parties;
+
+        // std::cout << "there are " << g.outEdgesOf[node_id].size() << " out edges for node " << g.nodes[node_id]->to_string() << std::endl;
+
         for (auto edge : g.outEdgesOf[node_id]) {
             if (edge->getInputs().size() != g.T + 1) // 是否每条出边恰好有 T + 1 个源点
                 return false;
@@ -51,14 +54,15 @@ public:
                 std::shared_ptr<Node> share = edge->getOutput();
                 if (g.outEdgesOf[share->guid].size() == 1) {
                     auto transit_edge = g.outEdgesOf[share->guid][0];
-                    if (edge->getType() == Operator::TRANSIT) { // 这条出边的类型是 TRANSIT)
-                        share = edge->getOutput(); // 我们改成考虑 transit 之后的 share
+                    if (transit_edge->getType() == Operator::TRANSIT) { // 这条出边的类型是 TRANSIT
+                        share = transit_edge->getOutput(); // 我们改成考虑 transit 之后的 share
                     }
                 }
 
                 const PartyDecl* party = share->party;
-                if (parties.contains(party)) // 确保每条出边的目标节点都是不同的 party
+                if (parties.contains(party)) { // 确保每条出边的目标节点都是不同的 party
                     return false;
+                }
                 parties.insert(party);
 
                 if (srcParties.contains(party)) {
@@ -72,13 +76,19 @@ public:
             return false;
         assert(src_ids.contains(node_id)); // 这 T + 1 个源点要包含 node 自己
         for (auto src_id: src_ids)
-            if (!g.isRandomNode(src_id)) // 剩下的 T 个源点应该是 random nodes
+            if (src_id != node_id && !g.isRandomNode(src_id)) // 剩下的 T 个源点应该是 random nodes
                 return false;
+        
+        // 如果所有检查都通过了的话，就返回 true
         return true;
     }
 
     // 输入一个图，然后返回用这个 transformer 作变换能得到的所有可能的图的列表
-    virtual ResultsType apply(const Graph &g);
+    virtual ResultsType apply(const Graph &g) = 0;
+
+    virtual std::string to_string() {
+        return "Transformer";
+    }
 };
 
 // Heuristics：
@@ -96,7 +106,7 @@ class AdditionTransformer : public Transformer {
 public:
     virtual ResultsType apply(const Graph &g) override {
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
-        for (int node_id = 0; node_id < g.nodeSize(); ++node_id)
+        for (int node_id = 0; node_id < (int)g.nodeSize(); ++node_id)
             for (auto edge: g.inEdgesOf[node_id]) {
                 if (edge->getType() == Operator::ADD) {
                     assert(edge->getInputs().size() == 2);
@@ -109,19 +119,33 @@ public:
                     std::shared_ptr<Node> dst = edge->getOutput();
 
                     // case 0: src0 = dst - src1
-                    auto new_edge0 = std::make_shared<Operation>(Operator::SUB, {dst, src1}, src0);
+                    auto new_edge0 = std::make_shared<Operation>(
+                        Operator::SUB,
+                        NodeVec{dst, src1},
+                        src0
+                    );
                     Graph g0 = g_eliminated.addEdge(new_edge0);
                     results.push_back(std::make_pair(g.nodes[node_id], g0));
 
                     // case 1: src1 = dst - src0
-                    auto new_edge1 = std::make_shared<Operation>(Operator::SUB, {dst, src0}, src1);
+                    auto new_edge1 = std::make_shared<Operation>(
+                        Operator::SUB,
+                        NodeVec{dst, src0},
+                        src1
+                    );
                     Graph g1 = g_eliminated.addEdge(new_edge1);
                     results.push_back(std::make_pair(g.nodes[node_id], g1));
                 }
             }
-        return views::filter(results, [&g](const ResultType& p) {
-            return p.second.randomNodeCnt() == g.randomNodeCnt();
-        });
+        ResultsType filtered_results;
+        for (ResultType result: results)
+            if (result.second.randomNodeCnt() == g.randomNodeCnt())
+                filtered_results.push_back(std::move(result));
+        return filtered_results;
+    }
+
+    virtual std::string to_string() override {
+        return "REVERSE_ADDITION";
     }
 };
 
@@ -137,12 +161,14 @@ public:
 
     virtual ResultsType apply(const Graph &g) override {
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
-        for (int node_id = 0; node_id < g.nodes.size(); ++node_id) {
+        for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id) {
             // 检查它是否是 input
             if (!g.nodes[node_id]->isInput()) continue;
 
             // 检查 node_id 是否是那个用来生成整个 Shamir sharing 的 “secret”
             if (!isRewritableSecret(g, node_id, srcParties)) continue;
+
+            // std::cout << "Apply Input Sharing Rewriting at " << g.nodes[node_id]->name << std::endl;
 
             // 收集旧边
             std::vector<std::shared_ptr<Operation>> edges_to_eliminate;
@@ -167,7 +193,11 @@ public:
 
                     if (srcParties.contains(transit_share->party)) {
                         edges_to_eliminate.push_back(g.outEdgesOf[share->guid][0]);
-                        edges_to_add.push_back(std::make_shared<Operation>(Operator::TRANSIT, std::vector<std::shared_ptr<Node>>{transit_share}, share));
+                        edges_to_add.push_back(std::make_shared<Operation>(
+                            Operator::TRANSIT,
+                            NodeVec{transit_share},
+                            share
+                        ));
                         srcs.push_back(share);
                     } else {
                         dsts.insert(share);
@@ -190,9 +220,15 @@ public:
             Graph g_new = g.eliminateEdges(edges_to_eliminate).addEdges(edges_to_add);
             results.push_back(std::make_pair(g.nodes[node_id], g_new));
         }
-        return std::views::filter(results, [&g](const ResultType& p) {
-            return p.second.randomNodeCnt() == g.randomNodeCnt();
-        });
+        ResultsType filtered_results;
+        for (ResultType result: results)
+            if (result.second.randomNodeCnt() == g.randomNodeCnt())
+                filtered_results.push_back(std::move(result));
+        return filtered_results;
+    }
+
+    virtual std::string to_string() override {
+        return "REVERSE_INPUT_SHARING";
     }
 };
 
@@ -207,8 +243,8 @@ public:
     RandomSharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {}
 
     virtual ResultsType apply(const Graph& g) override {
-        ResultsType graphs; // 这个是用来保存所有可能的 transformation 的结果的
-        for (int node_id = 0; node_id < g.nodes.size(); ++node_id) {
+        ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
+        for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id) {
             // 检查它是否是 random node
             if (!g.isRandomNode(node_id)) continue;
 
@@ -238,16 +274,20 @@ public:
 
                     if (srcParties.contains(transit_share->party)) {
                         edges_to_eliminate.push_back(g.outEdgesOf[share->guid][0]);
-                        edges_to_add.push_back(std::make_shared<Operation>(Operator::TRANSIT, {transit_share}, share));
+                        edges_to_add.push_back(std::make_shared<Operation>(
+                            Operator::TRANSIT,
+                            NodeVec{transit_share},
+                            share
+                        ));
                         srcs.push_back(share);
                     } else {
-                        dsts.push_back(share);
+                        dsts.insert(share);
                     }
                 } else {
                     if (srcParties.contains(share->party)) {
                         srcs.push_back(share);
                     } else {
-                        dsts.push_back(share);
+                        dsts.insert(share);
                     }
                 }
             }
@@ -258,12 +298,18 @@ public:
                 edges_to_add.push_back(new_edge);
             }
             // 建图
-            Graph g_new = g.eliminateEdges(edges_to_eliminate).addEdge(edges_to_add);
-            results.push_back(make_pair<g.nodes[node_id], g_new);
+            Graph g_new = g.eliminateEdges(edges_to_eliminate).addEdges(edges_to_add);
+            results.push_back(std::make_pair(g.nodes[node_id], g_new));
         }
-        return std::views::filter(results, [&g](const ResultType& p) {
-            return p.second.randomNodeCnt() == g.randomNodeCnt();
-        });
+        ResultsType filtered_results;
+        for (ResultType result: results)
+            if (result.second.randomNodeCnt() == g.randomNodeCnt())
+                filtered_results.push_back(std::move(result));
+        return filtered_results;
+    }
+
+    virtual std::string to_string() override {
+        return "REVERSE_RANDOM_SHARING";
     }
 };
 
@@ -275,12 +321,12 @@ class ReconstructionTransformer : public Transformer {
     std::unordered_set<const PartyDecl*> srcParties;
 
     bool isRewritableReconstruction(const Graph& g, std::shared_ptr<Operation> edge) {
-        assert(reconstruction_edge->getInputs().size() == g.partyCnt); // 应该恰好是把 N 个 share 收集起来做 reconstruction
-        unordered_set<const PartyDecl*> parties;
+        assert(edge->getInputs().size() == g.partyCnt); // 应该恰好是把 N 个 share 收集起来做 reconstruction
+        std::unordered_set<const PartyDecl*> parties;
         int random_dst_cnt = 0;
-        for (auto share: reconstruction_edge->getInputs()) {
-            if (g.inEdgesOf[node->guid].size() == 1) {
-                auto transit_edge = g.inEdgesOf[node->guid][0];
+        for (auto share: edge->getInputs()) {
+            if (g.inEdgesOf[share->guid].size() == 1) {
+                auto transit_edge = g.inEdgesOf[share->guid][0];
                 if (transit_edge->getType() == Operator::TRANSIT) { // 这条出边的类型是 TRANSIT)
                     assert(transit_edge->getInputs().size() == 1);
                     share = transit_edge->getInputs()[0]; // 我们改成考虑 transit 之后的 share
@@ -291,25 +337,36 @@ class ReconstructionTransformer : public Transformer {
                 return false;
             parties.insert(share->party);
 
-            if (!srcParties.contains(party)) {
+            if (!srcParties.contains(share->party)) {
                 random_dst_cnt += g.isRandomNode(share);
             }
         }
-        int whether_secret_will_be_random = g.inDeg(edge->getOutput()) == 1 && !g.isInput() && !g.isOutput();
+        int whether_secret_will_be_random = g.inDeg(edge->getOutput()) == 1 && !edge->getOutput()->isInput() && !edge->getOutput()->isOutput();
         if (random_dst_cnt != whether_secret_will_be_random) // 期望 destination share 中的 random node 的数量应该是和 secret 是否会是 random 的数量是一致的
             return false;
+        
+        // 如果所有检查都通过了的话，就返回 true
+        return true;
     }
 public:
-    ReconstructionTransformer(std::unordered_set<PartyDecl*> srcParties) : srcParties(srcParties) {}
+    ReconstructionTransformer(std::unordered_set<const PartyDecl*> srcParties)
+        : srcParties(srcParties) {}
 
     virtual ResultsType apply(const Graph& g) override {
+        // std::cout << "srcParties for ReconstructionTransformer:";
+        // for (auto party: srcParties)
+        //     std::cout << ' ' << party->id();
+        // std::cout << std::endl;
+
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
-        for (int node_id = 0; node_id < g.nodes.size(); ++node_id)
-            if (inEdgesOf[node_id].size() == 1 && inEdgesOf[node_id][0]->type == Operator::RECONSTRUCT) {
-                auto reconstruction_edge = inEdgesOf[node_id][0];
+        for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id)
+            if (g.inEdgesOf[node_id].size() == 1 && g.inEdgesOf[node_id][0]->getType() == Operator::RECONSTRUCT) {
+                // std::cout << "Consider node " << g.nodes[node_id]->name << std::endl;
+
+                auto reconstruction_edge = g.inEdgesOf[node_id][0];
 
                 // 首先我们来检查 pattern
-                if (!isRewritableReconstruction(reconstruction_edge)) continue;
+                if (!isRewritableReconstruction(g, reconstruction_edge)) continue;
                 
                 // 收集旧边
                 std::vector<std::shared_ptr<Operation>> edges_to_eliminate;
@@ -317,30 +374,72 @@ public:
                 std::vector<std::shared_ptr<Node>> srcs;
                 std::unordered_set<std::shared_ptr<Node>> dsts;
                 srcs.push_back(g.nodes[node_id]);
-                for (auto share: reconstruct_edge->getInputs()) {
-                    if (srcParties.contains(share->party)) {
-                        srcs.push_back(share);
-                    } else {
-                        dsts.push_back(share);
-                        if (g.inEdgesOf[share->guid].size() == 1) {
-                            auto transit_edge = g.inEdgesOf[share->guid][0];
+                edges_to_eliminate.push_back(reconstruction_edge);
+                for (auto share: reconstruction_edge->getInputs()) {
+                    if (g.inEdgesOf[share->guid].size() == 1 && g.inEdgesOf[share->guid][0]->getType() == Operator::TRANSIT) { // 这个 share 是 transit 过来的
+                        auto transit_edge = g.inEdgesOf[share->guid][0];
+                        assert(transit_edge->getInputs().size() == 1);
+                        auto share_before = transit_edge->getInputs()[0]; // 我们改成考虑 transit 之后的 share
+
+                        // std::cout << "Consider transit share " << share->name << " at party " << share_before->party->id() << std::endl;
+
+                        if (srcParties.contains(share_before->party)) {
+                            srcs.push_back(share);
+                        } else {
+                            dsts.insert(share);
+
                             edges_to_eliminate.push_back(transit_edge);
-                            edges_to_add.push_back(std::make_shared<Operation>(Operator::TRANSIT, {share}, transit_edge->getInputs()[0]));
+                            edges_to_add.push_back(std::make_shared<Operation>(
+                                Operator::TRANSIT,
+                                NodeVec{share},
+                                share_before
+                            ));
+                        }
+                    } else { // 这个 share 不是 transit 过来的
+                        if (srcParties.contains(share->party)) {
+                            srcs.push_back(share);
+                        } else {
+                            dsts.insert(share);
                         }
                     }
                 }
                 // 建新的 EVAL 边
                 for (auto dst: dsts) {
-                    auto new_edge = make_shared<Operation>(Operator::EVAL, srcs, dst);
+                    auto new_edge = std::make_shared<Operation>(
+                        Operator::EVAL,
+                        NodeVec(srcs.begin(), srcs.end()),
+                        dst);
                     edges_to_add.push_back(new_edge);
                 }
                 // 建图
-                Graph g_new = g.eliminateEdges(edges_to_eliminate).addEdge(edges_to_add);
+                // std::cout << "edges_to_eliminate:" << std::endl;
+                // for (auto edge: edges_to_eliminate)
+                //     std::cout << "\t" << edge->to_string() << std::endl;
+                // std::cout << "edges_to_add:" << std::endl;
+                // for (auto edge: edges_to_add)
+                //     std::cout << "\t" << edge->to_string() << std::endl;
+
+                // 一条必须删的边是 reconstruction 这条边，然后我们可能会取 t + 1 个 share，还剩下 n - t - 1 个 share 里可能还有一个不需要 transit 的，所以需要 transit 的就至少是 n - t - 2 个，那么总计就是至少要删 n - t - 1 条边。
+                assert((int)edges_to_eliminate.size() >= (int)(g.partyCnt - g.T - 1));
+                // 最多会有 n - t - 1 个 share 作为 dst，然后里面还可能有一个不需要 transit 的，所以加的边最少是 2n - 2t - 3 条
+                assert((int)edges_to_add.size() >= (int)(2 * (g.partyCnt - g.T - 1) - 1));
+                Graph g_new = g.eliminateEdges(edges_to_eliminate).addEdges(edges_to_add);
+
+                // std::cout << "the number of random nodes is changed to " << g_new.randomNodeCnt() << " from " << g.randomNodeCnt() << std::endl;
+                // std::cout << "the number of bubbles is changed to " << g_new.bubbleCnt() << " from " << g.bubbleCnt() << std::endl;
+                // std::cout << "the potential function is changed to " << mpc::to_string(g_new.potential()) << " from " << mpc::to_string(g.potential()) << std::endl;
+
                 results.push_back(std::make_pair(g.nodes[node_id], g_new));
             }
-        return std::views::filter(results, [&g](const ResultType& p) {
-            return p.second.randomNodeCnt() == g.randomNodeCnt();
-        });
+        ResultsType filtered_results;
+        for (ResultType result: results)
+            if (result.second.randomNodeCnt() == g.randomNodeCnt())
+                filtered_results.push_back(std::move(result));
+        return filtered_results;
+    }
+
+    virtual std::string to_string() override {
+        return "REVERSE_RECONSTRUCTION";
     }
 };
 

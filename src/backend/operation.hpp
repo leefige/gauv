@@ -27,7 +27,7 @@ class Operation {
     Operation(Operator type, std::vector<std::shared_ptr<Node>> inputs, std::shared_ptr<Node> output)
         : hash(generateHash()),
           type(type),
-          inputs(inputs),
+          inputs(inputs.begin(), inputs.end()),
           output(output) {}
     Operation(const Operation& rhs)
         : state(rhs.state),
@@ -37,21 +37,16 @@ class Operation {
           inputs(rhs.inputs),
           output(rhs.output) {}
 
-    void clear() {
-        inputs.clear();
-        output = nullptr;
-    }
-
     void setInputs(NodeVec inputs_) { inputs = inputs_; }
     void setOutput(std::shared_ptr<Node> output_) { output = output_; }
 
-    void addInput(std::shared_ptr<Node> input) { inputs.emplace_back(input); }
+    void addInput(std::shared_ptr<Node> input) { inputs = inputs.push_back(input); }
 
     NodeVec& getInputs() { return inputs; }
     const NodeVec& getInputs() const { return inputs; }
     std::shared_ptr<Node> getOutput() const { return output; }
 
-    const Operator getType() const { return type; }
+    Operator getType() const { return type; }
     void setType(Operator type_) { type = type_; }
 
     bool markGenerated() {

@@ -16,7 +16,7 @@ std::string Operation::to_string() const {
     if (inputs.size()) {
         ss << inputs[0]->getName();
     }
-    for (int i = 1; i < inputs.size(); i++) {
+    for (size_t i = 1; i < inputs.size(); i++) {
         ss << ", " << inputs[i]->getName();
     }
     ss << " -> ";

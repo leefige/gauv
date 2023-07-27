@@ -65,7 +65,7 @@ public:
     Type *elem_type;
 
     static PolyType *get_poly_type(Type *elem_type) {
-        static unordered_map<Type *, PolyType *> polynomials;
+        static std::unordered_map<Type *, PolyType *> polynomials;
         
         if (polynomials.find(elem_type) == polynomials.end())
             polynomials[elem_type] = new PolyType(elem_type);

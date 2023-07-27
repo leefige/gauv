@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ostream>
+#include <iostream>
 #include <sstream>
 #include <string>
 
@@ -41,7 +41,7 @@ class PartyDecl {
         static int id_cnt = 0;
         _id = id_cnt++;
 
-        cout << "declare a party " << _id << endl;
+        std::cout << "declare a party " << _id << std::endl;
     }
 
     /**

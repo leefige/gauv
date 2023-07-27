@@ -57,8 +57,8 @@ public:
         return *this;
     }
 
-    mpc::Share& yield(const mpc::PartyDecl* party, string name="") const {
-        // xxy: 我感觉这个函数的返回值的类型是 Share 就有点奇怪……
+    mpc::Share& yield(const mpc::PartyDecl* party, std::string name="") const {
+        // xxy: 我感觉这个函数的返回值的类型是 Share 好像稍微有点奇怪🤔
         std::vector<mpc::Expression*> transferred;
         for (auto s : _shares) {
             if (s->party() == party) {
@@ -73,7 +73,7 @@ public:
     friend Variable operator+(const Variable& lhs, const Variable& rhs) {
         Variable ret(lhs._ctx);
         auto N = lhs._ctx.N();
-        for (int i = 0; i < N; i++)
+        for (unsigned i = 0; i < N; i++)
             ret._shares.push_back(&(*lhs._shares[i] + *rhs._shares[i]));
         return ret;
     }
@@ -81,7 +81,7 @@ public:
     friend Variable operator*(const Variable& lhs, mpc::Constant& c) {
         Variable ret(lhs);
         auto N = lhs._ctx.N();
-        for (int i = 0; i < N; i++)
+        for (unsigned i = 0; i < N; i++)
             ret._shares[i] = &(*lhs._shares[i] * c);
         return ret;
     }
@@ -94,7 +94,7 @@ public:
         auto& ctx = lhs._ctx;
         auto N = ctx.N();
         Variable sum(ctx);
-        for (int i = 0; i < N; i++) {
+        for (unsigned i = 0; i < N; i++) {
             Variable inter(ctx, *lhs._shares[i] * *rhs._shares[i]);
             auto& lambda =
                 *new mpc::Constant(lhs._shares.front()->context(),

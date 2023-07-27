@@ -158,7 +158,7 @@ class Secret : public Placeholder {
      */
     explicit Secret(Context& context, const std::string& name, Type* type, const PartyDecl* party)
         : Placeholder(context, name, type, party) {
-        if (!context.register_secret(name, type, *this)) {
+        if (!context.register_secret(name, *this)) {
             throw var_redefinition(name);
         }
     }

@@ -163,10 +163,10 @@ public:
         return *ret;
     }
 
-    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl* party, string name="")
+    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl* party, std::string name="")
     {
         Type *type = shares[0]->type();
-        for (int i = 1; i < shares.size(); ++i) {
+        for (size_t i = 1; i < shares.size(); ++i) {
             if (shares[i]->type() != type) {
                 throw type_mismatch(type, shares[i]->type());
             }

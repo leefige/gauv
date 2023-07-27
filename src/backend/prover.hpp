@@ -2,11 +2,13 @@
 
 #include <chrono>
 
+#include <functional>
 #include <vector>
 #include <unordered_set>
 
 #include "graph.hpp"
 #include "transformer.hpp"
+#include "common.hpp"
 
 namespace mpc {
 
@@ -14,139 +16,32 @@ class Prover {
     const GraphBase& graph_base;
     const std::vector<std::unordered_set<PartyDecl *>> equivalent_classes;
     const std::vector<PartyDecl *> parties;
-    const int T;
-    const int verbose_level
+    const unsigned T;
 
-    enum TransformType {
-        TAIL_NODE,
-        TAIL_EDGE,
-        REVERSE_RECONSTRUCT,
-        REVERSE_ADDITION,
-        REVERSE_TRANSIT,
-        SIM_POLY,
-    };
-    struct HistEntry {
-        Node* node;
-        TransformType type;
-        Potential potential;
-    };
+    std::function<bool(Graph)> algorithm; // 这样写是为了更灵活，将来可以方便地替换这个核心算法
 
-    static std::string to_string(TransformType type) {
-        switch (type) {
-        case TAIL_NODE:
-            return "TAIL_NODE";
-        case TAIL_EDGE:
-            return "TAIL_EDGE";
-        case REVERSE_RECONSTRUCT:
-            return "REVERSE_RECONSTRUCT";
-        case REVERSE_TRANSIT:
-            return "REVERSE_TRANSIT";
-        case SIM_POLY:
-            return "SIM_POLY";
-        default:
-            throw std::runtime_error("Bad TransformType");
-        }
-    }
-
-    std::vector<HistEntry> transformTape;
-
-    // 俺们现在的算法是这样的，每次选一个让秩函数下降最多的 transformation 来做。
-    bool tryProving(Graph g) {
-        // 初始化
-        transformTape.clear();
-
-        // 定义 equivalent rewriters
-        Transformer additionRewriter = AdditionTransformer();
-        // 设置 source parties
-        std::unordered_set<PartyDecl*> srcParties;
-        for (auto party: parties) {
-            if (party->is_corrupted()) {
-                srcParties.insert(party);
-            }
-        }
-        // 加入 honest party 作为 source party 直到到达阈值 T
-        for (auto party: parties) {
-            if (party->is_honest()) {
-                srcParties.insert(party);
-                if (srcParties.size() == T)
-                    break;
-            }
-        }
-        Transformer inputSharingRewriter = InputSharingTransformer(srcParties);
-        Transformer reconstructionRewriter1 = ReconstructionTransformer(srcParties);
-
-        // 再多加一个 honest party 作为 source party，使得我们有 T + 1 个 source parties
-        Transformer randomSharingRewriter = RandomSharingTransformer(srcParties);
-        Transformer reconstructionRewriter2 = ReconstructionTransformer(srcParties);
-
-        std::vector<Transformer> equivalent_rewriters{
-            additionRewriter,
-            inputSharingRewriter,
-            randomSharingRewriter,
-            reconstructionRewriter1,
-            reconstructionRewriter2
-        }
-        
-        while (g.hasBubble()) {
-            bool transformed = false;
-            Node* min_node = nullptr;
-            Graph min_new_g;
-            for (auto& transformer : equivalent_rewriters) {
-                for (auto& (node, new_g): transformer.apply(g)) {
-                    if (min_node == nullptr || min_new_g.potential() < g.potential()) {
-                        min_node = node;
-                        min_new_g = new_g;
-                        transformed = true;
-                        break;
-                    }
-                }
-            }
-            if (!transformed) break;
-        }
-
-        while (true) {
-            bool transformed = false;
-            for (auto node : g.nodes)
-                if (g.outDeg(node) == 0 && node->party->is_honest()) {
-                    g = g.eliminateNode(node);
-                    transformed = true;
-                }
-            if (!transformed) break;
-        }
-
-        return !g.hasBubble();
-    }
-
-    function<bool(const Graph&)> algorithm = tryProving; // 这样写是为了更灵活，将来可以方便地替换这个核心算法
-
-    void search_all_possibilities(int equivalent_class_id, int corrupted_quota) {
+    void search_all_possibilities(unsigned equivalent_class_id, unsigned corrupted_quota) {
         if (equivalent_class_id == equivalent_classes.size()) {
             if (corrupted_quota == 0) {
                 Graph g(graph_base, parties.size(), T);
 
-                auto begin_time = chrono::high_resolution_clock::now();
+                std::cout << "Consider the case that the corrupted parties are:";
+                for (auto party: parties)
+                    if (party->is_corrupted())
+                        std::cout << ' ' << party->to_string();
+                std::cout << std::endl;
+
+                auto begin_time = std::chrono::high_resolution_clock::now();
                 bool proved = algorithm(g);
-                auto end_time = chrono::high_resolution_clock::now();
-                cout << endl << "Proved? " << std::boolalpha << proved << endl;
-                cout << "Time: " << (end_time - begin_time).count() / 1e9 << endl;
-                cout << "Final graph has " << graph.nodeSize() << " nodes, "
-                    << graph.edgeSize() << " edges" << endl;
-                cout << "Final potential: " << to_string(graph.potential()) << endl;
-                if (verbose_level >= 3) cout << "Final graph:" << endl << graph << endl;
-                if (verbose_level >= 2) {
-                    cout << endl << "Transform history:" << endl;
-                    for (auto& entry : transformTape) {
-                        cout << entry.node->getName()
-                            << " " << to_string(entry.type)
-                            << " " << to_string(entry.potential) << endl;
-                    }
-                }
+                auto end_time = std::chrono::high_resolution_clock::now();
+                std::cout << std::endl << "Proved? " << std::boolalpha << proved << std::endl;
+                std::cout << "Time: " << (end_time - begin_time).count() / 1e9 << std::endl;
             }
             return;
         }
-        for (int i = 0; i <= min(corrupted_quota, equivalent_classes[equivalent_class_id].size()); ++i) {
+        for (unsigned i = 0; i <= std::min((std::size_t)corrupted_quota, equivalent_classes[equivalent_class_id].size()); ++i) {
             // 在这个等价类里面选 i 个 corrupted_aprty
-            int j = 0;
+            unsigned j = 0;
             for (auto party : equivalent_classes[equivalent_class_id]) {
                 if (j < i)
                     party->set_corrupted();
@@ -159,27 +54,121 @@ class Prover {
         }
     }
 public:
+    // 俺们现在的算法是这样的，每次选一个让秩函数下降最多的 transformation 来做。
+    static bool tryProving(Graph g, const std::vector<PartyDecl *> parties, const int verbose_level) {
+        // 定义 equivalent rewriters
+        Transformer* additionRewriter = new AdditionTransformer();
+
+        // ** 设置 source parties
+        std::unordered_set<const PartyDecl*> srcParties;
+        for (auto party: parties) {
+            if (party->is_corrupted())
+                srcParties.insert(party);
+        }
+        // ** 加入 honest party 作为 source party 直到到达阈值 T
+        for (auto party: parties) {
+            if (srcParties.size() == g.T)
+                break;
+            if (party->is_honest())
+                srcParties.insert(party);
+        }
+        Transformer* inputSharingRewriter = new InputSharingTransformer(srcParties);
+        Transformer* reconstructionRewriter1 = new ReconstructionTransformer(srcParties);
+
+        // ** 再多加一个 honest party 作为 source party，使得我们有 T + 1 个 source parties
+        for (auto party: parties) {
+            if (party->is_honest() && !srcParties.contains(party)) {
+                srcParties.insert(party);
+                break;
+            }
+        }
+        Transformer* randomSharingRewriter = new RandomSharingTransformer(srcParties);
+        Transformer* reconstructionRewriter2 = new ReconstructionTransformer(srcParties);
+
+        std::vector<Transformer*> equivalent_rewriters{
+            additionRewriter,
+            inputSharingRewriter,
+            randomSharingRewriter,
+            reconstructionRewriter1,
+            reconstructionRewriter2
+        };
+        
+        while (g.hasBubble()) {
+            bool transformed = false;
+            std::shared_ptr<Node> min_node = nullptr;
+            std::string transformation_type = "";
+            Graph min_new_g;
+            for (auto& transformer : equivalent_rewriters) {
+                for (auto& [node, new_g]: transformer->apply(g)) {
+                    if (new_g.potential() < g.potential() &&
+                        (min_node == nullptr || new_g.potential() < min_new_g.potential())) {
+                        min_node = std::move(node);
+                        min_new_g = std::move(new_g);
+                        transformation_type = transformer->to_string();
+                        transformed = true;
+                        break;
+                    }
+                }
+            }
+
+            if (verbose_level >= 2) {
+                if (min_node != nullptr) {
+                    std::cout << min_node->getName()
+                        << " " << transformation_type
+                        << " " << to_string(min_new_g.potential()) << std::endl;
+                    std::cout << "After rewriting, the graph is" << std::endl;
+                    std::cout << min_new_g << std::endl;
+                }
+            }
+
+            if (!transformed) break;
+            g = std::move(min_new_g);
+        }
+
+        while (true) {
+            bool transformed = false;
+            for (size_t node_id = 0; node_id < g.nodeSize(); ++node_id)
+                if (g.nodes[node_id] != nullptr) { // 为空表示这个节点已经被删掉了
+                    if (g.outDeg(node_id) == 0 && g.nodes[node_id]->party->is_honest()) { // 我们删掉 honest party 中出度为 0 的节点
+                        g = g.eliminateNode(g.nodes[node_id]);
+
+                        transformed = true;
+                        break;
+                    }
+                }
+            if (!transformed) break;
+        }
+
+        std::cout << "Final graph has " << g.nodeSize() << " nodes, "
+                    << g.edgeSize() << " edges" << std::endl;
+        std::cout << "Final potential: " << to_string(g.potential()) << std::endl;
+        if (verbose_level >= 3) std::cout << "Final graph:" << std::endl << g << std::endl;
+
+        return !g.hasBubble();
+    }
+
     Prover(
         const GraphBase& graph_base,
         std::vector<std::unordered_set<PartyDecl *>> equivalent_classes,
-        std::vector<std::unordered_set<PartyDecl *>> parties,
-        const int T,
+        std::vector<PartyDecl *> parties,
+        const unsigned T,
         const int verbose_level = 3
-    ): graph_base(graph_base), equivalent_classes(equivalent_classes), parties(parties), T(T), verbose_level(verbose_level) {
-        cout << "Initial graph has " << graph.nodeSize() << " nodes, "
-            << graph.edgeSize() << " edges" << endl;
-        cout << "Initial potential: " << GraphProver::to_string(graph.potential())
-            << endl;
-        if (verbose_level >= 3) cout << endl << "Initial graph:" << endl << graph << endl;
-    }
-    ~GraphProver() {}
+    ): graph_base(graph_base), equivalent_classes(equivalent_classes), parties(parties), T(T) {
+        algorithm = std::bind(tryProving, std::placeholders::_1, parties, verbose_level);
 
-    void prove(int I) {
+        std::cout << "Initial graph has " << graph_base.nodeSize() << " nodes, "
+            << graph_base.edgeSize() << " edges" << std::endl;
+        if (verbose_level >= 3)
+            std::cout << std::endl << "Initial graph:" << std::endl << graph_base << std::endl;
+    }
+    ~Prover() {}
+
+    void prove(unsigned I) {
         search_all_possibilities(0, I);
     }
     void prove() {
-        for (int I = 1; I <= T; ++I)
-            prove(g, equivalent_classes, T, I);
+        for (unsigned I = 1; I <= T; ++I)
+            prove(I);
     }
 
     // old function, updates required

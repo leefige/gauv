@@ -13,8 +13,8 @@ class Node;
 class Operation;
 class GraphProver;
 
-using NodeVec = immer::flex_vector<std::shared_ptr<Node> >;
-using OpVec = immer::flex_vector<std::shared_ptr<Operation> >;
+using NodeVec = immer::flex_vector<std::shared_ptr<Node>>;
+using OpVec = immer::flex_vector<std::shared_ptr<Operation>>;
 
 inline size_t generateHash() {
     static uint64_t tag = 0;
@@ -33,7 +33,7 @@ inline int find(immer::flex_vector<T> vec, T item) {
 
 typedef std::tuple<int, int, int> Potential;
 
-static std::string to_string(Potential p) {
+std::string to_string(Potential p) {
     std::stringstream ss;
     ss << "(" << std::get<0>(p) << "," << std::get<1>(p) << ","
         << std::get<2>(p) << ")";
