@@ -150,21 +150,18 @@ public:
 };
 
 /**
- * @brief evaluate n shares from secret with t random nodes ====> use the secret and t random shares to evaluate the others
+ * @brief evaluate n shares from secret with t random nodes ====> use the secret and t random shares to evaluate the others.
  * 
  */
-class InputSharingTransformer : public Transformer {
+class SharingTransformer : public Transformer {
     std::unordered_set<const PartyDecl*> srcParties;
 
 public:
-    InputSharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {}
+    SharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {}
 
     virtual ResultsType apply(const Graph &g) override {
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
         for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id) {
-            // 检查它是否是 input
-            if (!g.nodes[node_id]->isInput()) continue;
-
             // 检查 node_id 是否是那个用来生成整个 Shamir sharing 的 “secret”
             if (!isRewritableSecret(g, node_id, srcParties)) continue;
 
@@ -228,7 +225,7 @@ public:
     }
 
     virtual std::string to_string() override {
-        return "REVERSE_INPUT_SHARING";
+        return "REVERSE_SHARING";
     }
 };
 
@@ -248,7 +245,7 @@ public:
             // 检查它是否是 random node
             if (!g.isRandomNode(node_id)) continue;
 
-            // 以下内容其实基本是从上面的 InputSharingTransformer 复制过来的qwq
+            // 以下内容其实基本是从上面的 SharingTransformer 复制过来的qwq
             // 检查 node_id 是否是那个用来生成整个 Shamir sharing 的 “secret”
             if (!isRewritableSecret(g, node_id, srcParties)) continue;
 

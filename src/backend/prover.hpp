@@ -72,7 +72,7 @@ public:
             if (party->is_honest())
                 srcParties.insert(party);
         }
-        Transformer* inputSharingRewriter = new InputSharingTransformer(srcParties);
+        Transformer* sharingRewriter = new SharingTransformer(srcParties);
         Transformer* reconstructionRewriter1 = new ReconstructionTransformer(srcParties);
 
         // ** 再多加一个 honest party 作为 source party，使得我们有 T + 1 个 source parties
@@ -87,7 +87,7 @@ public:
 
         std::vector<Transformer*> equivalent_rewriters{
             additionRewriter,
-            inputSharingRewriter,
+            sharingRewriter,
             randomSharingRewriter,
             reconstructionRewriter1,
             reconstructionRewriter2

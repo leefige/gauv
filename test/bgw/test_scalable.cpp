@@ -6,7 +6,6 @@
 
 #include "../../src/backend/builtin.hpp"
 #include "../../src/bgwfrontend/builtin.hpp"
-#include "prove_helper.hpp"
 
 using namespace mpc;
 using namespace std;
@@ -38,19 +37,19 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M, int verbose = 1) 
 
     std::vector<PartyDecl*> parties;
     std::vector<Secret*> secrets;
-    for (int i = 0; i < N; i++) {
+    for (size_t i = 0; i < N; i++) {
         auto party = new PartyDecl(ctx, "p_" + to_string(i));
         parties.push_back(party);
     }
 
-    for (int j = 0; j < M; j++) {
-        for (int i = 0; i < N; i++) {
+    for (size_t j = 0; j < M; j++) {
+        for (size_t i = 0; i < N; i++) {
             auto secret = new Secret(ctx, "x_" + to_string(i) + "_" + to_string(j), ArithFieldType::get_arith_field_type(), parties[i]);
             secrets.push_back(secret);
         }
     }
 
-    for (int i = 0; i < I; i++) {
+    for (size_t i = 0; i < I; i++) {
         parties[i]->set_corrupted();
     }
 
@@ -63,17 +62,25 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M, int verbose = 1) 
     *var = *secrets[0];
     *var = c * *var;
     *protocol = *var;
-    for (int i = 1; i < M * N; i++) {
+    for (size_t i = 1; i < M * N; i++) {
         *var = *secrets[i];
         rand_op(*protocol, *var);
     }
 
-    auto graph = make_shared<Graph>();
-    for (int i = 0; i < N; i++) {
-        graph->importFrontend(&(protocol->yield(parties[i])));
-    }
+    vector<Expression*> outputs;
+    for (size_t i = 0; i < N; i++)
+        outputs.push_back(&protocol->yield(parties[i]));
 
-    prove_by_hint(*graph, verbose);
+    GraphBaseBuilder builder(outputs);
+    GraphBase graph_base = builder.build();
+    Prover prover(graph_base,
+        vector<unordered_set<PartyDecl*>>{
+            unordered_set<PartyDecl*>(parties.begin(), parties.end())
+        },
+        parties,
+        T,
+        verbose);
+    prover.prove(I);
 }
 
 // try: .\test_scalable 10 10 100 1

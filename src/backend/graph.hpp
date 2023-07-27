@@ -304,6 +304,8 @@ public:
     }
 
     Potential potential() const {
+        // TODO: maybe we could also use a functional version to boost efficiency.
+
         // init search
         std::vector<bool> visited(nodeSize(), false);
         std::queue<size_t> q;

@@ -5,7 +5,6 @@
 
 #include "../../src/backend/builtin.hpp"
 #include "../../src/bgwfrontend/builtin.hpp"
-#include "prove_helper.hpp"
 
 using namespace mpc;
 using namespace std;
@@ -17,27 +16,35 @@ void test_linear_bgw(size_t I, size_t T) {
 
     std::vector<PartyDecl*> parties;
     std::vector<Secret*> secrets;
-    for (int i = 0; i < N; i++) {
+    for (size_t i = 0; i < N; i++) {
         auto party = new PartyDecl(ctx, "p" + to_string(i));
         auto secret = new Secret(ctx, "x" + to_string(i), ArithFieldType::get_arith_field_type(), party);
         parties.push_back(party);
         secrets.push_back(secret);
     }
-    for (int i = 0; i < I; i++) parties[i]->set_corrupted();
+    for (size_t i = 0; i < I; i++) parties[i]->set_corrupted();
 
     bgw::Context bgw_ctx(parties, T);
     std::vector<bgw::Variable> x;
-    for (int i = 0; i < N; i++)
+    for (size_t i = 0; i < N; i++)
         x.push_back(bgw::Variable(bgw_ctx) = *secrets[i]);
     // protocol described here
     auto c = Constant(ctx, "const_2");
     auto protocol = x[0] + x[1] + c * x[2];
 
-    Graph graph;
-    for (int i = 0; i < N; i++)
-        graph.importFrontend(&protocol.yield(parties[i]));
+    vector<Expression*> outputs;
+    for (unsigned i = 0; i < N; i++)
+        outputs.push_back(&protocol.yield(parties[i]));
 
-    prove_by_potential(graph);
+    GraphBaseBuilder builder(outputs);
+    GraphBase graph_base = builder.build();
+    Prover prover(graph_base,
+        vector<unordered_set<PartyDecl*>>{
+            unordered_set<PartyDecl*>(parties.begin(), parties.end())
+        },
+        parties,
+        T);
+    prover.prove(I);
 }
 
 int main(int argc, char* argv[]) {
