@@ -283,7 +283,7 @@ public:
         return Graph(
             GraphBase(
                 inEdgesOf,
-                outEdgesOf, 
+                outEdgesOf,
                 nodes.set(node->guid, nullptr) // 在节点列表 nodes 中删掉 node
             ),
             partyCnt,
@@ -318,15 +318,23 @@ public:
         // do search & calculate the second term
         int numReachableNodes = 0;
         while (!q.empty()) {
-            int node_id = q.front();
+            size_t node_id = q.front();
             q.pop();
             if (visited[node_id]) continue;
             visited[node_id] = true;
-            if (nodes[node_id]->party->is_honest())
+            if (nodes[node_id]->party->is_honest()) {
                 ++numReachableNodes;
+                // if (nodes[node_id]->name == "share_28") {
+                //     std::cout << "(NOTE: share_28 is reachable!) ";
+                // }
+            }
             for (auto e : inEdgesOf[node_id]) {
-                for (auto v : e->getInputs())
+                for (auto v : e->getInputs()) {
                     q.push(v->guid);
+                    // if (v->name == "share_28") {
+                    //     std::cout << "(share_28 comes from " << nodes[node_id]->name << ")";
+                    // }
+                }
             }
         }
         return Potential{bubbleCnt(), numReachableNodes, nodeSize()};

@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i < T; ++i) {
         reshared_beta_sharings.push_back(new bgw::Variable(bgw_ctx, *betas[i]));
     }
-    std::vector<const Expression *> outputs;
+    std::vector<Expression *> outputs;
     for (int i = T; i < N; ++i) {
         bgw::Variable output_sharing_i(bgw_ctx);
         for (int j = 0; j < T; ++j) {
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
     std::unordered_set<PartyDecl *> class2;
     for (int i = T; i < N; ++i) class2.insert(parties[i]);
     std::vector<std::unordered_set<PartyDecl *>> equivalent_classes({class0, class1, class2});
-    
+
     GraphBaseBuilder builder(outputs);
     GraphBase graph_base = builder.build();
     Prover prover(graph_base, equivalent_classes, parties, T);

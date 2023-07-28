@@ -117,6 +117,7 @@ public:
                     // 加入新边
                     std::shared_ptr<Node> src0 = edge->getInputs()[0], src1 = edge->getInputs()[1];
                     std::shared_ptr<Node> dst = edge->getOutput();
+                    assert(dst == g.nodes[node_id]);
 
                     // case 0: src0 = dst - src1
                     auto new_edge0 = std::make_shared<Operation>(
@@ -125,7 +126,7 @@ public:
                         src0
                     );
                     Graph g0 = g_eliminated.addEdge(new_edge0);
-                    results.push_back(std::make_pair(g.nodes[node_id], g0));
+                    results.push_back(std::make_pair(dst, g0));
 
                     // case 1: src1 = dst - src0
                     auto new_edge1 = std::make_shared<Operation>(
@@ -134,7 +135,24 @@ public:
                         src1
                     );
                     Graph g1 = g_eliminated.addEdge(new_edge1);
-                    results.push_back(std::make_pair(g.nodes[node_id], g1));
+
+                    // if (dst->name == "share_99") {
+                    //     std::cout << "Before addition transformation, ";
+                    //     std::cout << src0->name << " is " << (g.isRandomNode(src0) ? "" : "not ") << "random node, ";
+                    //     std::cout << src1->name << " is " << (g.isRandomNode(src1) ? "" : "not ") << "random node, ";
+                    //     std::cout << dst->name << " is " << (g.isRandomNode(dst) ? "" : "not ") << "random node.";
+                    //     std::cout << " The number of random nodes is " << g.randomNodeCnt() << ".";
+                    //     std::cout << " The value of potential function is " << mpc::to_string(g.potential()) << std::endl;
+
+                    //     std::cout << "After addition transformation, ";
+                    //     std::cout << src0->name << " is " << (g1.isRandomNode(src0) ? "" : "not ") << "random node, ";
+                    //     std::cout << src1->name << " is " << (g1.isRandomNode(src1) ? "" : "not ") << "random node, ";
+                    //     std::cout << dst->name << " is " << (g1.isRandomNode(dst) ? "" : "not ") << "random node.";
+                    //     std::cout << " The number of random nodes is " << g1.randomNodeCnt() << ".";
+                    //     std::cout << " The value of potential function is " << mpc::to_string(g1.potential()) << std::endl;
+                    // }
+
+                    results.push_back(std::make_pair(dst, g1));
                 }
             }
         ResultsType filtered_results;
@@ -170,8 +188,7 @@ public:
             // 收集旧边
             std::vector<std::shared_ptr<Operation>> edges_to_eliminate;
             std::vector<std::shared_ptr<Operation>> edges_to_add;
-            std::vector<std::shared_ptr<Node>> srcs;
-            srcs.push_back(g.nodes[node_id]);
+            std::vector<std::shared_ptr<Node>> srcs { g.nodes[node_id] };
             std::unordered_set<std::shared_ptr<Node>> dsts;
             for (auto edge: g.outEdgesOf[node_id]) {
                 assert(edge->getType() == Operator::EVAL);
@@ -237,7 +254,12 @@ class RandomSharingTransformer : public Transformer {
     std::unordered_set<const PartyDecl*> srcParties;
 
 public:
-    RandomSharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {}
+    RandomSharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {
+        // std::cout << "srcParties of random sharing transfomer are:";
+        // for (auto party: srcParties)
+        //     std::cout << ' ' << party->to_string();
+        // std::cout << std::endl;
+    }
 
     virtual ResultsType apply(const Graph& g) override {
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
@@ -253,7 +275,7 @@ public:
             std::vector<std::shared_ptr<Operation>> edges_to_eliminate;
             std::vector<std::shared_ptr<Operation>> edges_to_add;
             std::vector<std::shared_ptr<Node>> srcs;
-            std::unordered_set<std::shared_ptr<Node>> dsts;
+            std::unordered_set<std::shared_ptr<Node>> dsts { g.nodes[node_id] };
             for (auto edge: g.outEdgesOf[node_id]) {
                 assert(edge->getType() == Operator::EVAL);
                 edges_to_eliminate.push_back(edge);

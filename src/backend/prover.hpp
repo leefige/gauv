@@ -20,6 +20,23 @@ class Prover {
 
     std::function<bool(Graph)> algorithm; // 这样写是为了更灵活，将来可以方便地替换这个核心算法
 
+    void try_possiblity() {
+        // for debug
+        parties[0]->set_corrupted();
+        parties[1]->set_honest();
+        parties[2]->set_honest();
+        parties[3]->set_honest();
+        parties[4]->set_corrupted();
+
+        Graph g(graph_base, parties.size(), T);
+        
+        auto begin_time = std::chrono::high_resolution_clock::now();
+        bool proved = algorithm(g);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        std::cout << std::endl << "Proved? " << std::boolalpha << proved << std::endl;
+        std::cout << "Time: " << (end_time - begin_time).count() / 1e9 << std::endl << std::endl << std::endl;
+    }
+
     void search_all_possibilities(unsigned equivalent_class_id, unsigned corrupted_quota) {
         if (equivalent_class_id == equivalent_classes.size()) {
             if (corrupted_quota == 0) {
@@ -35,7 +52,7 @@ class Prover {
                 bool proved = algorithm(g);
                 auto end_time = std::chrono::high_resolution_clock::now();
                 std::cout << std::endl << "Proved? " << std::boolalpha << proved << std::endl;
-                std::cout << "Time: " << (end_time - begin_time).count() / 1e9 << std::endl;
+                std::cout << "Time: " << (end_time - begin_time).count() / 1e9 << std::endl << std::endl << std::endl;
             }
             return;
         }
@@ -100,7 +117,7 @@ public:
             Graph min_new_g;
             for (auto& transformer : equivalent_rewriters) {
                 for (auto& [node, new_g]: transformer->apply(g)) {
-                    if (new_g.potential() < g.potential() &&
+                    if (new_g.potential() <= g.potential() &&
                         (min_node == nullptr || new_g.potential() < min_new_g.potential())) {
                         min_node = std::move(node);
                         min_new_g = std::move(new_g);
@@ -116,8 +133,8 @@ public:
                     std::cout << min_node->getName()
                         << " " << transformation_type
                         << " " << to_string(min_new_g.potential()) << std::endl;
-                    std::cout << "After rewriting, the graph is" << std::endl;
-                    std::cout << min_new_g << std::endl;
+                    // std::cout << "After rewriting, the graph is" << std::endl;
+                    // std::cout << min_new_g << std::endl;
                 }
             }
 
@@ -164,6 +181,7 @@ public:
     ~Prover() {}
 
     void prove(unsigned I) {
+        // try_possiblity();
         search_all_possibilities(0, I);
     }
     void prove() {
