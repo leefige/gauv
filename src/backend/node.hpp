@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <functional>
 
 #include "../mpcgraph/builtin.hpp"
 #include "common.hpp"
@@ -49,30 +50,29 @@ class Node {
     //     }
     // }
 
-    Node(): hash(generateHash()) {}
+    Node() {}
     Node(std::string name, const PartyDecl*& party, NodeGenre type = OTHERS)
-        : hash(generateHash()),
-          name(name),
+        : name(name),
           party(party),
           type(type) {}
     Node(const Node& rhs)
         : // state(rhs.state),
-          hash(rhs.hash),
           guid(rhs.guid),
+          hash(rhs.hash),
           name(rhs.name),
           party(rhs.party),
           type(rhs.type) {}
-    Node(int guid) : hash(generateHash()), guid(guid) {}
+    Node(int guid) : guid(guid), hash(std::hash<int>{}(guid)) {}
     Node(int guid, std::string name, const PartyDecl*& party, NodeGenre type = OTHERS)
-        : hash(generateHash()),
-          guid(guid),
+        : guid(guid),
+          hash(std::hash<int>{}(guid)),
           name(name),
           party(party),
           type(type) {}
     Node(int guid, const Node& rhs)
         : // state(rhs.state),
-          hash(rhs.hash),
           guid(guid),
+          hash(rhs.hash),
           name(rhs.name),
           party(rhs.party),
           type(rhs.type) {}
@@ -127,11 +127,9 @@ class Node {
         return ss.str();
     }
 
-   private:
-    uint64_t hash;
-
    public:
     const int guid = -1; // graph unique id
+    const size_t hash = 0;
     std::string name;
     const PartyDecl* party;
     NodeGenre type;

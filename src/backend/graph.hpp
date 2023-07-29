@@ -26,6 +26,17 @@ namespace mpc {
  * 
  */
 class GraphBase {
+    size_t generateHash(immer::flex_vector<OpVec> inEdgesOf) {
+        size_t res = 0;
+        for (OpVec inEdges: inEdgesOf) {
+            size_t cur_res = 0;
+            for (std::shared_ptr<Operation> edge: inEdges)
+                cur_res ^= edge->hash;
+            res = (res * 23) ^ cur_res; // 23 is just some magic number
+        }
+        return res;
+    }
+
 public:
     int guid = 0;
 
@@ -34,18 +45,21 @@ public:
     immer::flex_vector<OpVec> inEdgesOf, outEdgesOf;
     NodeVec nodes;
 
+    // Assuming the inEdgesOf and outEdgesOf are correctly synchronized, we only consider inEdgesOf for hashing.
+    const size_t hash = 0;
+
     GraphBase() {}
     GraphBase(const GraphBase& g):
-        guid(g.guid), inEdgesOf(g.inEdgesOf), outEdgesOf(g.outEdgesOf), nodes(g.nodes) {}
+        guid(g.guid), inEdgesOf(g.inEdgesOf), outEdgesOf(g.outEdgesOf), nodes(g.nodes), hash(g.hash) {}
     GraphBase(
         immer::flex_vector<OpVec> inEdgesOf,
         immer::flex_vector<OpVec> outEdgesOf,
         immer::flex_vector<std::shared_ptr<Node>> nodes
     ):
-        inEdgesOf(inEdgesOf), outEdgesOf(outEdgesOf), nodes(nodes) {}
+        inEdgesOf(inEdgesOf), outEdgesOf(outEdgesOf), nodes(nodes), hash(generateHash(inEdgesOf)) {}
     // 移动构造函数
     GraphBase(GraphBase&& g):
-        guid(std::move(g.guid)), inEdgesOf(std::move(g.inEdgesOf)), outEdgesOf(std::move(g.outEdgesOf)), nodes(std::move(g.nodes)) {}
+        guid(std::move(g.guid)), inEdgesOf(std::move(g.inEdgesOf)), outEdgesOf(std::move(g.outEdgesOf)), nodes(std::move(g.nodes)), hash(g.hash) {}
 
     ~GraphBase() {}
 
@@ -97,7 +111,6 @@ public:
         return edge_size;
     }
 
-    // TODO: hash
     std::string to_string() const {
         std::stringstream ss;
         for (size_t node_id = 0; node_id < nodes.size(); ++node_id)
@@ -157,8 +170,19 @@ public:
     // 移动构造函数
     Graph(Graph&& g):
         GraphBase((GraphBase)g), _randomNodeCnt(g._randomNodeCnt), _bubbleCnt(g._bubbleCnt), partyCnt(g.partyCnt), T(g.T) {}
-    
+
     ~Graph() {}
+
+    bool operator== (const Graph& other) const {
+        if (hash != other.hash) return false;
+        
+        if (_randomNodeCnt != other._randomNodeCnt) return false;
+        if (_bubbleCnt != other._bubbleCnt) return false;
+        
+        // For efficiency, we don't have a sound equivalence checking here.
+
+        return true;
+    }
 
     // 移动赋值运算符
     Graph& operator=(Graph&& g) noexcept {
@@ -312,8 +336,6 @@ public:
     }
 
     Potential potential() const {
-        // TODO: maybe we could also use a functional version to boost efficiency.
-
         // init search
         std::vector<bool> visited(nodeSize(), false);
         std::queue<size_t> q;
@@ -341,6 +363,14 @@ public:
         }
         return Potential{bubbleCnt(), numReachableNodes, nodeSize()};
     }
+
+    struct Hash
+    {
+        size_t operator() (const Graph& graph) const
+        {
+        return graph.hash;
+        }
+    };
 
     // old version, update required
     // std::string getHashString() {

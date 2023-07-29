@@ -11,7 +11,7 @@
 using namespace mpc;
 using namespace std;
 
-void test_full_bgw(int cor) {
+void test_full_bgw() {
     // x * y + 2 * z
     constexpr size_t T = 1;
     constexpr size_t N = 3;
@@ -25,7 +25,6 @@ void test_full_bgw(int cor) {
         parties.push_back(party);
         secrets.push_back(secret);
     }
-    parties[cor]->set_corrupted();
 
     bgw::Context bgw_ctx(parties, T);
     std::vector<bgw::Variable> x;
@@ -47,23 +46,18 @@ void test_full_bgw(int cor) {
         },
         parties,
         T);
-    prover.prove(cor);
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 1 && argc != 2) {
-        cout << "Usage: " << argv[0] << " corrupted_party" << endl;
+    if (argc != 1) {
+        cout << "Usage: " << argv[0] << endl;
         return 0;
-    }
-    int cor = 0;
-    if (argc == 2) {
-        cor = atoi(argv[1]);
     }
 
 #ifdef DEBUG // if in the debug version
     spdlog::set_level(spdlog::level::trace); // default level is "info"
 #endif
 
-    test_full_bgw(cor);
+    test_full_bgw();
     return 0;
 }

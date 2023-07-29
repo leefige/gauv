@@ -94,6 +94,7 @@ public:
             reconstructionRewriter2
         };
         
+        std::unordered_set<Graph, Graph::Hash> considered_graphs;
         while (g.hasBubble()) {
             bool transformed = false;
             std::shared_ptr<Node> min_node = nullptr;
@@ -102,7 +103,8 @@ public:
             for (auto& transformer : equivalent_rewriters) {
                 for (auto& [node, new_g]: transformer->apply(g)) {
                     if (new_g.potential() <= g.potential() &&
-                        (min_node == nullptr || new_g.potential() < min_new_g.potential())) {
+                        (min_node == nullptr || new_g.potential() < min_new_g.potential()) &&
+                        !considered_graphs.contains(new_g)) {
                         min_node = std::move(node);
                         min_new_g = std::move(new_g);
                         transformation_type = transformer->to_string();
@@ -117,10 +119,12 @@ public:
                     min_node->getName(),
                     transformation_type,
                     to_string(min_new_g.potential()));
+                spdlog::debug("After rewriting, the graph becomes\n{}", min_new_g.to_string());
             }
 
             if (!transformed) break;
             g = std::move(min_new_g);
+            considered_graphs.insert(g);
         }
 
         // Actually, eliminating tail nodes won't make difference to the equivalent rewriting.
@@ -160,7 +164,6 @@ public:
     ~Prover() {}
 
     void prove(unsigned I) {
-        // try_possiblity();
         search_all_possibilities(0, I);
     }
     void prove() {

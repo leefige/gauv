@@ -164,6 +164,8 @@ public:
     virtual ResultsType apply(const Graph &g) override {
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
         for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id) {
+            // TODO: maybe this loop could be optimized by only enumerating a "potential nodes" list.
+
             // 检查 node_id 是否是那个用来生成整个 Shamir sharing 的 “secret”
             if (!isRewritableSecret(g, node_id, srcParties)) continue;
 

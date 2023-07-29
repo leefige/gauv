@@ -9,28 +9,45 @@
 namespace mpc {
 
 class Operation {
-   public:
-    enum OperationState {
-        UNVISITED = 0,
-        VISITED,
-        GENERATED,
-        ELIMINATED,
-    } state;
-    Operation() : hash(generateHash()) {}
+    size_t generateHash(NodeVec inputs, std::shared_ptr<Node> output) {
+        size_t res = 0;
+        for (auto input: inputs)
+            res ^= input->hash;
+        res *= 2333; // 2333 is just some magic number
+        res ^= output->hash;
+        return res;
+    }
+    size_t generateHash(std::vector<std::shared_ptr<Node>> inputs, std::shared_ptr<Node> output) {
+        size_t res = 0;
+        for (auto input: inputs)
+            res ^= input->hash;
+        res *= 2333; // 2333 is just some magic number
+        res ^= output->hash;
+        return res;
+    }
+
+public:
+    // enum OperationState {
+    //     UNVISITED = 0,
+    //     VISITED,
+    //     GENERATED,
+    //     ELIMINATED,
+    // } state;
+    Operation() {}
     Operation(Operator type)
-        : hash(generateHash()), type(type) {}
+        : type(type) {}
     Operation(Operator type, NodeVec inputs, std::shared_ptr<Node> output)
-        : hash(generateHash()),
+        : hash(generateHash(inputs, output)),
           type(type),
           inputs(inputs),
           output(output) {}
     Operation(Operator type, std::vector<std::shared_ptr<Node>> inputs, std::shared_ptr<Node> output)
-        : hash(generateHash()),
+        : hash(generateHash(inputs, output)),
           type(type),
           inputs(inputs.begin(), inputs.end()),
           output(output) {}
     Operation(const Operation& rhs)
-        : state(rhs.state),
+        : // state(rhs.state),
           payload(rhs.payload),
           hash(rhs.hash),
           type(rhs.type),
@@ -49,24 +66,25 @@ class Operation {
     Operator getType() const { return type; }
     void setType(Operator type_) { type = type_; }
 
-    bool markGenerated() {
-        state = GENERATED;
-        return true;
-    }
-    bool isGenerated() const { return state == GENERATED; }
+    // bool markGenerated() {
+    //     state = GENERATED;
+    //     return true;
+    // }
+    // bool isGenerated() const { return state == GENERATED; }
 
-    bool markEliminated() {
-        state = ELIMINATED;
-        return true;
-    }
-    bool isEliminated() const { return state == ELIMINATED; }
+    // bool markEliminated() {
+    //     state = ELIMINATED;
+    //     return true;
+    // }
+    // bool isEliminated() const { return state == ELIMINATED; }
 
     std::string to_string() const;
 
     void* payload = nullptr;
 
+    const size_t hash = 0;
+
    private:
-    uint64_t hash;
     Operator type;
     NodeVec inputs;
     std::shared_ptr<Node> output;
