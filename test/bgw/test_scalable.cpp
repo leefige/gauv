@@ -1,4 +1,6 @@
-#include <assert.h>
+#include <cassert>
+
+#include <spdlog/spdlog.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -30,7 +32,7 @@ void rand_op(bgw::Variable& out, const bgw::Variable& var) {
     }
 }
 
-void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M, int verbose = 1) {
+void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
     Context& ctx = Context::get_context();
 
     auto c = Constant(ctx, "const");
@@ -78,8 +80,7 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M, int verbose = 1) 
             unordered_set<PartyDecl*>(parties.begin(), parties.end())
         },
         parties,
-        T,
-        verbose);
+        T);
     prover.prove(I);
 }
 
@@ -93,13 +94,11 @@ int main(int argc, char* argv[]) {
     auto T = atoi(argv[2]);
     auto N = atoi(argv[3]);
     auto M = atoi(argv[4]);
-    int verbose;
-    if (N * M <= 3)
-        verbose = 3;
-    else if (N * M <= 5)
-        verbose = 2;
-    else
-        verbose = 1;
-    test_bgw_scalable(I, T, N, M, verbose);
+
+#ifdef DEBUG // if in the debug version
+    spdlog::set_level(spdlog::level::trace); // default level is "info"
+#endif
+
+    test_bgw_scalable(I, T, N, M);
     return 0;
 }

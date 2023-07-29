@@ -40,7 +40,7 @@ class Poly : public Expression {
 public:
     ~Poly()
     {
-        // std::cout << "~Poly " << name() << " released" << std::endl;
+        spdlog::trace("~Poly {}", name());
     }
 
     static Poly& gen_poly(Context& context, const PartyDecl* party,

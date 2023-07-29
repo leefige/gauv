@@ -1,8 +1,10 @@
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 
 #include <immer/flex_vector.hpp>
+
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <iostream>
@@ -96,13 +98,19 @@ public:
     }
 
     // TODO: hash
-    friend std::ostream& operator<<(std::ostream& o, const GraphBase& g) {
-        for (size_t node_id = 0; node_id < g.nodes.size(); ++node_id)
-            if (g.nodes[node_id] != nullptr) {
-                o << g.nodes[node_id]->to_string() << std::endl;
-                for (auto edge: g.inEdgesOf[node_id])
-                    o << '\t' << edge->to_string() << std::endl;
+    std::string to_string() const {
+        std::stringstream ss;
+        for (size_t node_id = 0; node_id < nodes.size(); ++node_id)
+            if (nodes[node_id] != nullptr) {
+                ss << nodes[node_id]->to_string() << std::endl;
+                for (auto edge: inEdgesOf[node_id])
+                    ss << "\t" << edge->to_string() << std::endl;
             }
+        return ss.str();
+    }
+
+    friend std::ostream& operator<<(std::ostream& o, const GraphBase& g) {
+        o << g.to_string();
         return o;
     }
 };
@@ -255,7 +263,7 @@ public:
         return g;
     }
     Graph eliminateNode(std::shared_ptr<Node> node) const {
-        std::cout << "ELIMINATE_TAIL_NODE " << node->getName() << std::endl;
+        spdlog::debug("ELIMINATE_TAIL_NODE {}", node->getName());
 
         auto inEdgesOf = this->inEdgesOf.set(node->guid, OpVec()); // 删掉 node 的入边
         auto outEdgesOf = this->outEdgesOf.set(node->guid, OpVec()); // 删掉 node 的出边
@@ -324,16 +332,10 @@ public:
             visited[node_id] = true;
             if (nodes[node_id]->party->is_honest()) {
                 ++numReachableNodes;
-                // if (nodes[node_id]->name == "share_28") {
-                //     std::cout << "(NOTE: share_28 is reachable!) ";
-                // }
             }
             for (auto e : inEdgesOf[node_id]) {
                 for (auto v : e->getInputs()) {
                     q.push(v->guid);
-                    // if (v->name == "share_28") {
-                    //     std::cout << "(share_28 comes from " << nodes[node_id]->name << ")";
-                    // }
                 }
             }
         }

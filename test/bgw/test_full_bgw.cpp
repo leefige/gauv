@@ -1,4 +1,6 @@
-#include <assert.h>
+#include <cassert>
+
+#include <spdlog/spdlog.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -57,6 +59,11 @@ int main(int argc, char* argv[]) {
     if (argc == 2) {
         cor = atoi(argv[1]);
     }
+
+#ifdef DEBUG // if in the debug version
+    spdlog::set_level(spdlog::level::trace); // default level is "info"
+#endif
+
     test_full_bgw(cor);
     return 0;
 }

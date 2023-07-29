@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+#include <spdlog/spdlog.h>
+
 #include <vector>
 #include <unordered_set>
 #include <utility>
@@ -40,8 +42,6 @@ public:
             return false;
         std::unordered_set<int> src_ids;
         std::unordered_set<const PartyDecl*> parties;
-
-        // std::cout << "there are " << g.outEdgesOf[node_id].size() << " out edges for node " << g.nodes[node_id]->to_string() << std::endl;
 
         for (auto edge : g.outEdgesOf[node_id]) {
             if (edge->getInputs().size() != g.T + 1) // 是否每条出边恰好有 T + 1 个源点
@@ -136,22 +136,6 @@ public:
                     );
                     Graph g1 = g_eliminated.addEdge(new_edge1);
 
-                    // if (dst->name == "share_99") {
-                    //     std::cout << "Before addition transformation, ";
-                    //     std::cout << src0->name << " is " << (g.isRandomNode(src0) ? "" : "not ") << "random node, ";
-                    //     std::cout << src1->name << " is " << (g.isRandomNode(src1) ? "" : "not ") << "random node, ";
-                    //     std::cout << dst->name << " is " << (g.isRandomNode(dst) ? "" : "not ") << "random node.";
-                    //     std::cout << " The number of random nodes is " << g.randomNodeCnt() << ".";
-                    //     std::cout << " The value of potential function is " << mpc::to_string(g.potential()) << std::endl;
-
-                    //     std::cout << "After addition transformation, ";
-                    //     std::cout << src0->name << " is " << (g1.isRandomNode(src0) ? "" : "not ") << "random node, ";
-                    //     std::cout << src1->name << " is " << (g1.isRandomNode(src1) ? "" : "not ") << "random node, ";
-                    //     std::cout << dst->name << " is " << (g1.isRandomNode(dst) ? "" : "not ") << "random node.";
-                    //     std::cout << " The number of random nodes is " << g1.randomNodeCnt() << ".";
-                    //     std::cout << " The value of potential function is " << mpc::to_string(g1.potential()) << std::endl;
-                    // }
-
                     results.push_back(std::make_pair(dst, g1));
                 }
             }
@@ -182,8 +166,6 @@ public:
         for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id) {
             // 检查 node_id 是否是那个用来生成整个 Shamir sharing 的 “secret”
             if (!isRewritableSecret(g, node_id, srcParties)) continue;
-
-            // std::cout << "Apply Input Sharing Rewriting at " << g.nodes[node_id]->name << std::endl;
 
             // 收集旧边
             std::vector<std::shared_ptr<Operation>> edges_to_eliminate;
@@ -255,10 +237,9 @@ class RandomSharingTransformer : public Transformer {
 
 public:
     RandomSharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {
-        // std::cout << "srcParties of random sharing transfomer are:";
-        // for (auto party: srcParties)
-        //     std::cout << ' ' << party->to_string();
-        // std::cout << std::endl;
+        spdlog::trace("srcParties of random sharing transformer are:");
+        for (auto party: srcParties)
+            spdlog::trace("\t{}", party->to_string());
     }
 
     virtual ResultsType apply(const Graph& g) override {
@@ -369,19 +350,16 @@ class ReconstructionTransformer : public Transformer {
     }
 public:
     ReconstructionTransformer(std::unordered_set<const PartyDecl*> srcParties)
-        : srcParties(srcParties) {}
+        : srcParties(srcParties) {
+            spdlog::trace("srcParties for reconstruction transformer:");
+            for (auto party: srcParties)
+                spdlog::trace("\t{}", party->id());
+        }
 
     virtual ResultsType apply(const Graph& g) override {
-        // std::cout << "srcParties for ReconstructionTransformer:";
-        // for (auto party: srcParties)
-        //     std::cout << ' ' << party->id();
-        // std::cout << std::endl;
-
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
         for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id)
             if (g.inEdgesOf[node_id].size() == 1 && g.inEdgesOf[node_id][0]->getType() == Operator::RECONSTRUCT) {
-                // std::cout << "Consider node " << g.nodes[node_id]->name << std::endl;
-
                 auto reconstruction_edge = g.inEdgesOf[node_id][0];
 
                 // 首先我们来检查 pattern
@@ -399,8 +377,6 @@ public:
                         auto transit_edge = g.inEdgesOf[share->guid][0];
                         assert(transit_edge->getInputs().size() == 1);
                         auto share_before = transit_edge->getInputs()[0]; // 我们改成考虑 transit 之后的 share
-
-                        // std::cout << "Consider transit share " << share->name << " at party " << share_before->party->id() << std::endl;
 
                         if (srcParties.contains(share_before->party)) {
                             srcs.push_back(share);
@@ -431,22 +407,11 @@ public:
                     edges_to_add.push_back(new_edge);
                 }
                 // 建图
-                // std::cout << "edges_to_eliminate:" << std::endl;
-                // for (auto edge: edges_to_eliminate)
-                //     std::cout << "\t" << edge->to_string() << std::endl;
-                // std::cout << "edges_to_add:" << std::endl;
-                // for (auto edge: edges_to_add)
-                //     std::cout << "\t" << edge->to_string() << std::endl;
-
                 // 一条必须删的边是 reconstruction 这条边，然后我们可能会取 t + 1 个 share，还剩下 n - t - 1 个 share 里可能还有一个不需要 transit 的，所以需要 transit 的就至少是 n - t - 2 个，那么总计就是至少要删 n - t - 1 条边。
                 assert((int)edges_to_eliminate.size() >= (int)(g.partyCnt - g.T - 1));
                 // 最多会有 n - t - 1 个 share 作为 dst，然后里面还可能有一个不需要 transit 的，所以加的边最少是 2n - 2t - 3 条
                 assert((int)edges_to_add.size() >= (int)(2 * (g.partyCnt - g.T - 1) - 1));
                 Graph g_new = g.eliminateEdges(edges_to_eliminate).addEdges(edges_to_add);
-
-                // std::cout << "the number of random nodes is changed to " << g_new.randomNodeCnt() << " from " << g.randomNodeCnt() << std::endl;
-                // std::cout << "the number of bubbles is changed to " << g_new.bubbleCnt() << " from " << g.bubbleCnt() << std::endl;
-                // std::cout << "the potential function is changed to " << mpc::to_string(g_new.potential()) << " from " << mpc::to_string(g.potential()) << std::endl;
 
                 results.push_back(std::make_pair(g.nodes[node_id], g_new));
             }

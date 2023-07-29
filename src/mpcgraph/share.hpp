@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include "expression.hpp"
 #include "excepts.hpp"
 #include "context.hpp"
@@ -66,7 +68,7 @@ class Share : public Expression {
 public:
     virtual ~Share()
     {
-        // std::cout << "~Share " << name() << " released" << std::endl;
+        spdlog::trace("Share {}", name());
     }
 
     static Share& gen_share(Context& context, Type* type, const PartyDecl* party)

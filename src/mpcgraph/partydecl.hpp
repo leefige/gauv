@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spdlog/spdlog.h>
+
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -41,7 +43,7 @@ class PartyDecl {
         static int id_cnt = 0;
         _id = id_cnt++;
 
-        std::cout << "declare a party " << _id << std::endl;
+        spdlog::debug("declare a party {}", _id);
     }
 
     /**

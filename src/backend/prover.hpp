@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include <spdlog/spdlog.h>
+
 #include <functional>
 #include <vector>
 #include <unordered_set>
@@ -20,39 +22,21 @@ class Prover {
 
     std::function<bool(Graph)> algorithm; // 这样写是为了更灵活，将来可以方便地替换这个核心算法
 
-    void try_possiblity() {
-        // for debug
-        parties[0]->set_corrupted();
-        parties[1]->set_honest();
-        parties[2]->set_honest();
-        parties[3]->set_honest();
-        parties[4]->set_corrupted();
-
-        Graph g(graph_base, parties.size(), T);
-        
-        auto begin_time = std::chrono::high_resolution_clock::now();
-        bool proved = algorithm(g);
-        auto end_time = std::chrono::high_resolution_clock::now();
-        std::cout << std::endl << "Proved? " << std::boolalpha << proved << std::endl;
-        std::cout << "Time: " << (end_time - begin_time).count() / 1e9 << std::endl << std::endl << std::endl;
-    }
-
     void search_all_possibilities(unsigned equivalent_class_id, unsigned corrupted_quota) {
         if (equivalent_class_id == equivalent_classes.size()) {
             if (corrupted_quota == 0) {
                 Graph g(graph_base, parties.size(), T);
 
-                std::cout << "Consider the case that the corrupted parties are:";
+                spdlog::info("Consider the case that the corrupted parties are:");
                 for (auto party: parties)
                     if (party->is_corrupted())
-                        std::cout << ' ' << party->to_string();
-                std::cout << std::endl;
+                        spdlog::info("\t{}", party->to_string());
 
                 auto begin_time = std::chrono::high_resolution_clock::now();
                 bool proved = algorithm(g);
                 auto end_time = std::chrono::high_resolution_clock::now();
-                std::cout << std::endl << "Proved? " << std::boolalpha << proved << std::endl;
-                std::cout << "Time: " << (end_time - begin_time).count() / 1e9 << std::endl << std::endl << std::endl;
+                spdlog::info("Proved? {}", proved);
+                spdlog::info("Time: {}\n\n", (end_time - begin_time).count() / 1e9);
             }
             return;
         }
@@ -72,7 +56,7 @@ class Prover {
     }
 public:
     // 俺们现在的算法是这样的，每次选一个让秩函数下降最多的 transformation 来做。
-    static bool tryProving(Graph g, const std::vector<PartyDecl *> parties, const int verbose_level) {
+    static bool tryProving(Graph g, const std::vector<PartyDecl *> parties) {
         // 定义 equivalent rewriters
         Transformer* additionRewriter = new AdditionTransformer();
 
@@ -128,20 +112,19 @@ public:
                 }
             }
 
-            if (verbose_level >= 2) {
-                if (min_node != nullptr) {
-                    std::cout << min_node->getName()
-                        << " " << transformation_type
-                        << " " << to_string(min_new_g.potential()) << std::endl;
-                    // std::cout << "After rewriting, the graph is" << std::endl;
-                    // std::cout << min_new_g << std::endl;
-                }
+            if (min_node != nullptr) {
+                spdlog::debug("{} {} {}",
+                    min_node->getName(),
+                    transformation_type,
+                    to_string(min_new_g.potential()));
             }
 
             if (!transformed) break;
             g = std::move(min_new_g);
         }
 
+        // Actually, eliminating tail nodes won't make difference to the equivalent rewriting.
+        // Thus, we could move all tail node eliminations to the end.
         while (true) {
             bool transformed = false;
             for (size_t node_id = 0; node_id < g.nodeSize(); ++node_id)
@@ -156,10 +139,9 @@ public:
             if (!transformed) break;
         }
 
-        std::cout << "Final graph has " << g.nodeSize() << " nodes, "
-                    << g.edgeSize() << " edges" << std::endl;
-        std::cout << "Final potential: " << to_string(g.potential()) << std::endl;
-        if (verbose_level >= 3) std::cout << "Final graph:" << std::endl << g << std::endl;
+        spdlog::info("Final graph has {} nodes, {} edges.", g.nodeSize(), g.edgeSize());
+        spdlog::info("Final potential: {}", to_string(g.potential()));
+        spdlog::debug("Final graph:\n{}", g.to_string());
 
         return !g.hasBubble();
     }
@@ -168,15 +150,12 @@ public:
         const GraphBase& graph_base,
         std::vector<std::unordered_set<PartyDecl *>> equivalent_classes,
         std::vector<PartyDecl *> parties,
-        const unsigned T,
-        const int verbose_level = 3
+        const unsigned T
     ): graph_base(graph_base), equivalent_classes(equivalent_classes), parties(parties), T(T) {
-        algorithm = std::bind(tryProving, std::placeholders::_1, parties, verbose_level);
+        algorithm = std::bind(tryProving, std::placeholders::_1, parties);
 
-        std::cout << "Initial graph has " << graph_base.nodeSize() << " nodes, "
-            << graph_base.edgeSize() << " edges" << std::endl;
-        if (verbose_level >= 3)
-            std::cout << std::endl << "Initial graph:" << std::endl << graph_base << std::endl;
+        spdlog::info("Initial graph has {} nodes, {} edges.", graph_base.nodeSize(), graph_base.edgeSize());
+        spdlog::debug("Initial graph:\n{}", graph_base.to_string());
     }
     ~Prover() {}
 

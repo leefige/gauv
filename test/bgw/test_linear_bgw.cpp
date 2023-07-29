@@ -1,4 +1,6 @@
-#include <assert.h>
+#include <cassert>
+
+#include <spdlog/spdlog.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -57,6 +59,11 @@ int main(int argc, char* argv[]) {
         I = atoi(argv[1]);
         T = atoi(argv[2]);
     }
+
+#ifdef DEBUG // if in the debug version
+    spdlog::set_level(spdlog::level::trace); // default level is "info"
+#endif
+
     test_linear_bgw(I, T);
     return 0;
 }

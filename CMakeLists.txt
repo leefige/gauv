@@ -6,7 +6,7 @@ set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
 set(CMAKE_CXX_STANDARD 20)  # 设置 C++ 标准为 C++20
 
 # 设置 Debug 构建类型的编译选项
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
 
 # 设置 Release 构建类型的编译选项
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
