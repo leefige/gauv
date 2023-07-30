@@ -1,7 +1,5 @@
 # MPC verifier
 
-Please refer to [BGW test readme](test/bgw/README.md).
-
 ## Dependencies
 
 Since we rely on third-party libraries (immer and spdlog), after cloning this repository, you could use the following commands at the root path of this repository to fetch the third-party libraries.
@@ -60,4 +58,3 @@ We use a library spdlog for logging. There are six logging level (from small to 
 
 - [ ] Xingyu feels that if it is possible to execute the graph, its design and implementation will be much better, and omitted details (e.g. the value range of this node) could be discovered and perfected.
 - [ ] Xingyu feels that more documentation will make our lives better.
-- [ ] Xingyu feels that we may need a more robust logging system. Maybe some third party logging library could help us, for example, [spdlog](https://github.com/gabime/spdlog/).
