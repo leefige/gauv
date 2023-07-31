@@ -9,20 +9,22 @@
 namespace mpc {
 
 class Operation {
-    size_t generateHash(NodeVec inputs, std::shared_ptr<Node> output) {
-        size_t res = 0;
+    uint64_t generateHash(Operator type, NodeVec inputs, std::shared_ptr<Node> output) {
+        uint64_t res = (uint64_t)type * 2333333;
         for (auto input: inputs)
-            res ^= input->hash;
-        res *= 2333; // 2333 is just some magic number
-        res ^= output->hash;
+            res += input->guid;
+        res *= 2333333; // 2333333 is just some magic number
+        if (output != nullptr)
+            res += output->guid;
         return res;
     }
-    size_t generateHash(std::vector<std::shared_ptr<Node>> inputs, std::shared_ptr<Node> output) {
-        size_t res = 0;
+    uint64_t generateHash(Operator type, std::vector<std::shared_ptr<Node>> inputs, std::shared_ptr<Node> output) {
+        uint64_t res = (uint64_t)type * 2333333;
         for (auto input: inputs)
-            res ^= input->hash;
-        res *= 2333; // 2333 is just some magic number
-        res ^= output->hash;
+            res += input->guid;
+        res *= 2333333; // 2333333 is just some magic number
+        if (output != nullptr)
+            res += output->guid;
         return res;
     }
 
@@ -37,12 +39,12 @@ public:
     Operation(Operator type)
         : type(type) {}
     Operation(Operator type, NodeVec inputs, std::shared_ptr<Node> output)
-        : hash(generateHash(inputs, output)),
+        : hash(generateHash(type, inputs, output)),
           type(type),
           inputs(inputs),
           output(output) {}
     Operation(Operator type, std::vector<std::shared_ptr<Node>> inputs, std::shared_ptr<Node> output)
-        : hash(generateHash(inputs, output)),
+        : hash(generateHash(type, inputs, output)),
           type(type),
           inputs(inputs.begin(), inputs.end()),
           output(output) {}
@@ -54,17 +56,29 @@ public:
           inputs(rhs.inputs),
           output(rhs.output) {}
 
-    void setInputs(NodeVec inputs_) { inputs = inputs_; }
-    void setOutput(std::shared_ptr<Node> output_) { output = output_; }
+    void setInputs(NodeVec inputs_) {
+        inputs = inputs_;
+        hash = generateHash(type, inputs, output);
+    }
+    void setOutput(std::shared_ptr<Node> output_) {
+        output = output_;
+        hash = generateHash(type, inputs, output);
+    }
 
-    void addInput(std::shared_ptr<Node> input) { inputs = inputs.push_back(input); }
+    void addInput(std::shared_ptr<Node> input) {
+        inputs = inputs.push_back(input);
+        hash = generateHash(type, inputs, output);
+    }
 
     NodeVec& getInputs() { return inputs; }
     const NodeVec& getInputs() const { return inputs; }
     std::shared_ptr<Node> getOutput() const { return output; }
 
     Operator getType() const { return type; }
-    void setType(Operator type_) { type = type_; }
+    void setType(Operator type_) {
+        type = type_;
+        hash = generateHash(type, inputs, output);
+    }
 
     // bool markGenerated() {
     //     state = GENERATED;
@@ -82,7 +96,7 @@ public:
 
     void* payload = nullptr;
 
-    const size_t hash = 0;
+    uint64_t hash = 0;
 
    private:
     Operator type;

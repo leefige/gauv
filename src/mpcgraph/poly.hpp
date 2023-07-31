@@ -38,10 +38,7 @@ class Poly : public Expression {
     }
 
 public:
-    ~Poly()
-    {
-        spdlog::trace("~Poly {}", name());
-    }
+    ~Poly() {}
 
     static Poly& gen_poly(Context& context, const PartyDecl* party,
             Expression& C, size_t degree)

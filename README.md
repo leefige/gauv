@@ -48,7 +48,7 @@ The main constraint for our program is the size of the BGW graph instead of the 
 
 ## Conversion
 
-`test/conversion/test_bin2arith 2 3 4`
+`test/conversion/test_bin2arith 1 1 3`
 
 ## Logging
 

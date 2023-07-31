@@ -24,6 +24,9 @@ std::string Operation::to_string() const {
         ss << output->getName();
     }
     ss << ">";
+    
+    ss << " hash: " << hash;
+
     return ss.str();
 }
 }  // namespace mpc

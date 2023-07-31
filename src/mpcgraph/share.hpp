@@ -66,10 +66,7 @@ class Share : public Expression {
     }
 
 public:
-    virtual ~Share()
-    {
-        spdlog::trace("Share {}", name());
-    }
+    virtual ~Share() {}
 
     static Share& gen_share(Context& context, Type* type, const PartyDecl* party)
     {

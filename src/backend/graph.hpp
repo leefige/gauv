@@ -26,13 +26,22 @@ namespace mpc {
  * 
  */
 class GraphBase {
-    size_t generateHash(immer::flex_vector<OpVec> inEdgesOf) {
-        size_t res = 0;
+    uint64_t generateHash(immer::flex_vector<OpVec> inEdgesOf) {
+        uint64_t res = 0;
         for (OpVec inEdges: inEdgesOf) {
-            size_t cur_res = 0;
+            uint64_t cur_res = 0;
             for (std::shared_ptr<Operation> edge: inEdges)
                 cur_res ^= edge->hash;
-            res = (res * 23) ^ cur_res; // 23 is just some magic number
+            res = (res * 1000000009) + cur_res; // 23 is just some magic number
+        }
+        if (res == 0) {
+            spdlog::trace("WARNING: res == 0!");
+            for (size_t i = 0; i < inEdgesOf.size(); ++i) {
+                uint64_t cur_res = 0;
+                for (std::shared_ptr<Operation> edge: inEdgesOf[i])
+                    cur_res ^= edge->hash;
+                spdlog::trace("the cur_res of inEdgesOf[{}] (size = {}) is {}", i, inEdgesOf[i].size(), cur_res);
+            }
         }
         return res;
     }
@@ -46,7 +55,7 @@ public:
     NodeVec nodes;
 
     // Assuming the inEdgesOf and outEdgesOf are correctly synchronized, we only consider inEdgesOf for hashing.
-    const size_t hash = 0;
+    uint64_t hash = 0;
 
     GraphBase() {}
     GraphBase(const GraphBase& g):
@@ -70,6 +79,7 @@ public:
             inEdgesOf = std::move(g.inEdgesOf);
             outEdgesOf = std::move(g.outEdgesOf);
             nodes = std::move(g.nodes);
+            hash = std::move(g.hash);
         }
         return *this;
     }
@@ -188,6 +198,7 @@ public:
     Graph& operator=(Graph&& g) noexcept {
         if (this != &g) {
             guid = std::move(g.guid);
+            hash = std::move(g.hash);
             inEdgesOf = std::move(g.inEdgesOf);
             outEdgesOf = std::move(g.outEdgesOf);
             nodes = std::move(g.nodes);
@@ -366,7 +377,7 @@ public:
 
     struct Hash
     {
-        size_t operator() (const Graph& graph) const
+        uint64_t operator() (const Graph& graph) const
         {
         return graph.hash;
         }

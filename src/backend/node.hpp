@@ -123,7 +123,7 @@ class Node {
 
     std::string to_string() const {
         std::stringstream ss;
-        ss << "<node[" << party->name() << ", " << to_string(type) << "] " << name << ">";
+        ss << "<node[" << party->name() << ", " << to_string(type) << ", " << guid << "] " << name << ">";
         return ss.str();
     }
 

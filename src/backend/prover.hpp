@@ -102,6 +102,8 @@ public:
             Graph min_new_g;
             for (auto& transformer : equivalent_rewriters) {
                 for (auto& [node, new_g]: transformer->apply(g)) {
+                    // spdlog::trace("{} considers {}, potential becomes {}, hash becomes {}", transformer->to_string(), node->to_string(), to_string(new_g.potential()), new_g.hash);
+
                     if (new_g.potential() <= g.potential() &&
                         (min_node == nullptr || new_g.potential() < min_new_g.potential()) &&
                         !considered_graphs.contains(new_g)) {
@@ -114,17 +116,17 @@ public:
                 }
             }
 
-            if (min_node != nullptr) {
-                spdlog::debug("{} {} {}",
-                    min_node->getName(),
-                    transformation_type,
-                    to_string(min_new_g.potential()));
-                spdlog::debug("After rewriting, the graph becomes\n{}", min_new_g.to_string());
-            }
-
             if (!transformed) break;
             g = std::move(min_new_g);
             considered_graphs.insert(g);
+
+            spdlog::debug("{} {} {} {}",
+                min_node->getName(),
+                transformation_type,
+                to_string(g.potential()),
+                g.hash
+            );
+            // spdlog::debug("After rewriting, the graph becomes\n{}", g.to_string());
         }
 
         // Actually, eliminating tail nodes won't make difference to the equivalent rewriting.
