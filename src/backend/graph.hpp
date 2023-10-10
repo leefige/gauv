@@ -23,13 +23,16 @@ namespace mpc {
 /**
  * @brief This is a *persistent* graph class, which means that it is immutable and all manipulations will return a new graph.
  * GraphBase is unaware of corrupted parties, GraphBase is aware of corrupted parties.
- * 
+ *
  */
 class GraphBase {
     uint64_t generateHash(immer::flex_vector<OpVec> inEdgesOf) {
         uint64_t res = 0;
         for (OpVec inEdges: inEdgesOf) {
             uint64_t cur_res = 0;
+#ifdef _OPENMP
+#pragma omp parallel num_threads(8) reduction(^:cur_res)
+#endif
             for (std::shared_ptr<Operation> edge: inEdges)
                 cur_res ^= edge->hash;
             res = (res * 1000000009) + cur_res; // 23 is just some magic number
@@ -38,6 +41,9 @@ class GraphBase {
             spdlog::trace("WARNING: res == 0!");
             for (size_t i = 0; i < inEdgesOf.size(); ++i) {
                 uint64_t cur_res = 0;
+#ifdef _OPENMP
+#pragma omp parallel num_threads(8) reduction(^:cur_res)
+#endif
                 for (std::shared_ptr<Operation> edge: inEdgesOf[i])
                     cur_res ^= edge->hash;
                 spdlog::trace("the cur_res of inEdgesOf[{}] (size = {}) is {}", i, inEdgesOf[i].size(), cur_res);
@@ -64,7 +70,7 @@ public:
         immer::flex_vector<OpVec> inEdgesOf,
         immer::flex_vector<OpVec> outEdgesOf,
         immer::flex_vector<std::shared_ptr<Node>> nodes
-    ):
+    ) :
         inEdgesOf(inEdgesOf), outEdgesOf(outEdgesOf), nodes(nodes), hash(generateHash(inEdgesOf)) {}
     // 移动构造函数
     GraphBase(GraphBase&& g):
@@ -115,6 +121,9 @@ public:
     }
     inline size_t edgeSize() const {
         size_t edge_size = 0;
+#ifdef _OPENMP
+#pragma omp parallel num_threads(8) reduction(+:edge_size)
+#endif
         for (size_t i = 0; i < nodes.size(); ++i) {
             edge_size += outEdgesOf[i].size();
         }
@@ -158,13 +167,13 @@ public:
     // assisting informations are missed, then we could calculate them when initializing
     Graph(const GraphBase &g, unsigned partyCnt, unsigned T):
         GraphBase(g), partyCnt(partyCnt), T(T) {
-        
+
         // compute randomNodeCnt
         _randomNodeCnt = 0;
         for (auto node: g.nodes)
             if (g.isRandomNode(node))
                 ++_randomNodeCnt;
-        
+
         // compute bubbleCnt
         _bubbleCnt = 0;
         for (auto node: g.nodes)
@@ -185,10 +194,10 @@ public:
 
     bool operator== (const Graph& other) const {
         if (hash != other.hash) return false;
-        
+
         if (_randomNodeCnt != other._randomNodeCnt) return false;
         if (_bubbleCnt != other._bubbleCnt) return false;
-        
+
         // For efficiency, we don't have a sound equivalence checking here.
 
         return true;
@@ -219,7 +228,7 @@ public:
                 inEdgesOf = inEdgesOf.set(dst->guid, inEdgesOf[dst->guid].erase(id));
                 break;
             }
-        
+
         // 在 srcs 的出边列表中的 edge 删掉
         auto outEdgesOf = this->outEdgesOf;
         for (auto src: edge->getInputs()) {
@@ -320,7 +329,7 @@ public:
                         outEdgesOf = outEdgesOf.set(src->guid, outEdgesOf.at(src->guid).erase(id));
                         break;
                     }
-            }   
+            }
         }
 
         return Graph(

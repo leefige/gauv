@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include <spdlog/spdlog.h>
+#include <omp.h>
 
 #include <functional>
 #include <vector>
@@ -48,7 +49,7 @@ class Prover {
                     party->set_corrupted();
                 else
                     party->set_honest();
-                
+
                 ++j;
             }
             search_all_possibilities(equivalent_class_id + 1, corrupted_quota - i);
@@ -93,7 +94,7 @@ public:
             reconstructionRewriter1,
             reconstructionRewriter2
         };
-        
+
         std::unordered_set<Graph, Graph::Hash> considered_graphs;
         while (g.hasBubble()) {
             bool transformed = false;
@@ -169,6 +170,9 @@ public:
         search_all_possibilities(0, I);
     }
     void prove() {
+#ifdef _OPENMP
+#pragma omp parallel num_threads(omp_get_num_procs())
+#endif
         for (unsigned I = 1; I <= T; ++I)
             prove(I);
     }

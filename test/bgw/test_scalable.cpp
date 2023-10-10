@@ -50,7 +50,6 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
             secrets.push_back(secret);
         }
     }
-
     for (size_t i = 0; i < I; i++) {
         parties[i]->set_corrupted();
     }

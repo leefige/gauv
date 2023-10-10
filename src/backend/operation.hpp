@@ -1,5 +1,7 @@
 #pragma once
 
+#include <omp.h>
+
 #include <vector>
 #include <memory>
 
@@ -11,8 +13,13 @@ namespace mpc {
 class Operation {
     uint64_t generateHash(Operator type, NodeVec inputs, std::shared_ptr<Node> output) {
         uint64_t res = (uint64_t)type * 2333333;
+        uint64_t resp = 0;
+#ifdef _OPENMP
+#pragma omp parallel num_threads(8) reduction(+:resp)
+#endif
         for (auto input: inputs)
-            res += input->guid;
+            resp += input->guid;
+        res += resp;
         res *= 2333333; // 2333333 is just some magic number
         if (output != nullptr)
             res += output->guid;
@@ -20,8 +27,13 @@ class Operation {
     }
     uint64_t generateHash(Operator type, std::vector<std::shared_ptr<Node>> inputs, std::shared_ptr<Node> output) {
         uint64_t res = (uint64_t)type * 2333333;
+        uint64_t resp = 0;
+#ifdef _OPENMP
+#pragma omp parallel num_threads(8) reduction(+:resp)
+#endif
         for (auto input: inputs)
-            res += input->guid;
+            resp += input->guid;
+        res += resp;
         res *= 2333333; // 2333333 is just some magic number
         if (output != nullptr)
             res += output->guid;
