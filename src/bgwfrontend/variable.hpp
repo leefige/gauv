@@ -71,18 +71,24 @@ public:
     }
 
     friend Variable operator+(const Variable& lhs, const Variable& rhs) {
+        static size_t addCounter = 0;
         Variable ret(lhs._ctx);
         auto N = lhs._ctx.N();
         for (unsigned i = 0; i < N; i++)
             ret._shares.push_back(&(*lhs._shares[i] + *rhs._shares[i]));
+        addCounter++;
+        spdlog::trace("addCounter: {}", addCounter);
         return ret;
     }
 
     friend Variable operator*(const Variable& lhs, mpc::Constant& c) {
+        static size_t constMulCounter = 0;
         Variable ret(lhs);
         auto N = lhs._ctx.N();
         for (unsigned i = 0; i < N; i++)
             ret._shares[i] = &(*lhs._shares[i] * c);
+        constMulCounter++;
+        spdlog::trace("constMulCounter: {}", constMulCounter);
         return ret;
     }
     friend Variable operator*(mpc::Constant& c, const Variable& rhs) {
@@ -106,6 +112,7 @@ public:
                 sum = sum + inter * lambda;
         }
         mulCounter++;
+        spdlog::trace("mulCounter: {}", mulCounter);
         return sum;
     }
 };
