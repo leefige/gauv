@@ -27,7 +27,7 @@ class Share : public Expression {
     explicit Share(Context& context,
             const std::string& name,
             Type* type,
-            const PartyDecl* party) noexcept
+            PartyDecl* party) noexcept
         : Expression(context, name, type, Equation(Operator::INPUT, {}), party)
     {
         (void) context.register_share(name, this);
@@ -37,7 +37,7 @@ class Share : public Expression {
             const std::string& name,
             Type* type,
             const Equation& eqn,
-            const PartyDecl* party) noexcept
+            PartyDecl* party) noexcept
         : Expression(context, name, type, eqn, party)
     {
         (void) context.register_share(name, this);
@@ -68,7 +68,7 @@ class Share : public Expression {
 public:
     virtual ~Share() {}
 
-    static Share& gen_share(Context& context, Type* type, const PartyDecl* party)
+    static Share& gen_share(Context& context, Type* type, PartyDecl* party)
     {
         size_t num = context.n_share();
         std::stringstream ss;
@@ -141,7 +141,7 @@ public:
         return a.scalarMul(c);
     }
 
-    Share& transfer(const PartyDecl* party)
+    Share& transfer(PartyDecl* party)
     {
         if (this->party() == party) {
             return *this;
@@ -162,7 +162,7 @@ public:
         return *ret;
     }
 
-    static Share& reconstruct(std::vector<Expression*>& shares, const PartyDecl* party, std::string name="")
+    static Share& reconstruct(std::vector<Expression*>& shares, PartyDecl* party, std::string name="")
     {
         Type *type = shares[0]->type();
         for (size_t i = 1; i < shares.size(); ++i) {
@@ -174,9 +174,9 @@ public:
         // We need to check if the shares comes from the same polynomial and the shares are more than the degree of the polynomial.
         // Note that this polynomial is not a explicit `Expression`, so it is a little hard to describe in the current framework yet...
 
-        const PartyDecl* party_0 = dynamic_cast<const Share*>(shares[0])->party();
+        PartyDecl* party_0 = dynamic_cast<const Share*>(shares[0])->party();
         for (auto share : shares) {
-            const PartyDecl* party_i = dynamic_cast<const Share*>(share)->party();
+            PartyDecl* party_i = dynamic_cast<const Share*>(share)->party();
             if (party_0 != party_i) {
                 throw party_mismatch(party_0, party_i);
             }

@@ -57,8 +57,8 @@ public:
         return *this;
     }
 
-    mpc::Share& yield(const mpc::PartyDecl* party, std::string name="") const {
-        // xxy: 我感觉这个函数的返回值的类型是 Share 好像稍微有点奇怪🤔
+    mpc::Share& yield(mpc::PartyDecl* party, std::string name="") const {
+        // Xingyu: 我感觉这个函数的返回值的类型是 Share 好像稍微有点奇怪🤔
         std::vector<mpc::Expression*> transferred;
         for (auto s : _shares) {
             if (s->party() == party) {

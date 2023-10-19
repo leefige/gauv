@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include <immer/flex_vector.hpp>
+#include <immer/set.hpp>
 
 #include <spdlog/spdlog.h>
 
@@ -160,13 +161,18 @@ public:
     // meta data
     unsigned partyCnt;
     unsigned T;
+    immer::set<PartyDecl*> corruptedParties;
 
     Graph() {}
-    Graph(const GraphBase& g, unsigned partyCnt, unsigned T, unsigned randomNodeCnt, unsigned bubbleCnt):
-        GraphBase(g), _randomNodeCnt(randomNodeCnt), _bubbleCnt(bubbleCnt), partyCnt(partyCnt), T(T) {}
+    Graph(const GraphBase& g,
+        unsigned partyCnt, unsigned T, immer::set<PartyDecl*> corruptedParties,
+        unsigned randomNodeCnt, unsigned bubbleCnt):
+        GraphBase(g),
+        _randomNodeCnt(randomNodeCnt), _bubbleCnt(bubbleCnt),
+        partyCnt(partyCnt), T(T), corruptedParties(corruptedParties) {}
     // assisting informations are missed, then we could calculate them when initializing
-    Graph(const GraphBase &g, unsigned partyCnt, unsigned T):
-        GraphBase(g), partyCnt(partyCnt), T(T) {
+    Graph(const GraphBase &g, unsigned partyCnt, unsigned T, immer::set<PartyDecl*> corruptedParties):
+        GraphBase(g), partyCnt(partyCnt), T(T), corruptedParties(corruptedParties) {
 
         // compute randomNodeCnt
         _randomNodeCnt = 0;
@@ -177,18 +183,21 @@ public:
         // compute bubbleCnt
         _bubbleCnt = 0;
         for (auto node: g.nodes)
-            if (node->party->is_honest()) {
+            if (corruptedParties.find(node->party) == nullptr) { // the node is at an honest party
                 _bubbleCnt += node->isInput() || node->isOutput();
-            } else {
-                assert(node->party->is_corrupted());
+            } else { // the node is at a corrupted party
                 _bubbleCnt += (node->isInput() || node->isOutput()) && g.inDeg(node) != 0;
             }
     }
     Graph(const Graph &g):
-        GraphBase((GraphBase)g), _randomNodeCnt{g._randomNodeCnt}, _bubbleCnt(g._bubbleCnt), partyCnt(g.partyCnt), T(g.T) {}
+        GraphBase((GraphBase)g),
+        _randomNodeCnt{g._randomNodeCnt}, _bubbleCnt(g._bubbleCnt),
+        partyCnt(g.partyCnt), T(g.T), corruptedParties(g.corruptedParties) {}
     // 移动构造函数
     Graph(Graph&& g):
-        GraphBase((GraphBase)g), _randomNodeCnt(g._randomNodeCnt), _bubbleCnt(g._bubbleCnt), partyCnt(g.partyCnt), T(g.T) {}
+        GraphBase((GraphBase)g),
+        _randomNodeCnt(g._randomNodeCnt), _bubbleCnt(g._bubbleCnt),
+        partyCnt(g.partyCnt), T(g.T), corruptedParties(g.corruptedParties) {}
 
     ~Graph() {}
 
@@ -215,6 +224,7 @@ public:
             _bubbleCnt = std::move(g._bubbleCnt);
             partyCnt = std::move(g.partyCnt);
             T = std::move(g.T);
+            corruptedParties = std::move(g.corruptedParties);
         }
         return *this;
     }
@@ -242,12 +252,13 @@ public:
         // 计算 random nodes 的数量改变，删边之后是可能导致原来的 dst 变成 random node 的
         int addedRandomNodesCnt = inDeg(dst) == 1 && !dst->isInput() && !dst->isOutput();
         // 计算 bubble 的数量改变，删边之后是可能导致原来的 dst 由 bubble 变成不是 bubble 的。
-        int decreasedBubbles = inDeg(dst) == 1 && (dst->isInput() || dst->isOutput()) && dst->party->is_corrupted();
+        int decreasedBubbles = inDeg(dst) == 1 && (dst->isInput() || dst->isOutput()) && corruptedParties.find(dst->party) != nullptr;
 
         return Graph(
             GraphBase(inEdgesOf, outEdgesOf, nodes),
             partyCnt,
             T,
+            corruptedParties,
             randomNodeCnt() + addedRandomNodesCnt,
             bubbleCnt() - decreasedBubbles
         );
@@ -282,12 +293,13 @@ public:
         int eliminatedRandomNodesCnt = inDeg(dst) == 0 && !dst->isInput() && !dst->isOutput();
 
         // 计算 bubble 数量的改变，如果 dst 是 corrupted party 的 input 或者 output 的话，我们要将其视为 bubble
-        int addedBubbleCnt = inDeg(dst) == 0 && (dst->isInput() || dst->isOutput()) && dst->party->is_corrupted();
+        int addedBubbleCnt = inDeg(dst) == 0 && (dst->isInput() || dst->isOutput()) && corruptedParties.find(dst->party) != nullptr;
 
         return Graph(
             GraphBase(inEdgesOf, outEdgesOf, nodes),
             partyCnt,
             T,
+            corruptedParties,
             randomNodeCnt() - eliminatedRandomNodesCnt,
             bubbleCnt() + addedBubbleCnt
         );
@@ -340,8 +352,9 @@ public:
             ),
             partyCnt,
             T,
+            corruptedParties,
             randomNodeCnt(),
-            bubbleCnt() - ((node->isInput() || node->isOutput()) && node->party->is_honest()) // 如果被删掉的节点是 honest party 的 input 或者 output 的话，bubble 数量 - 1
+            bubbleCnt() - ((node->isInput() || node->isOutput()) && corruptedParties.find(node->party) == nullptr) // 如果被删掉的节点是 honest party 的 input 或者 output 的话，bubble 数量 - 1
         );
     }
 
@@ -363,7 +376,7 @@ public:
         // let's start from the corrupted parties' nodes
         for (size_t node_id = 0; node_id < nodeSize(); ++node_id)
             if (nodes[node_id] != nullptr &&
-                nodes[node_id]->party->is_corrupted())
+                corruptedParties.find(nodes[node_id]->party) != nullptr) // the node is at a corrupted party
                 q.push(node_id);
         // do search & calculate the second term
         int numReachableNodes = 0;
@@ -372,7 +385,8 @@ public:
             q.pop();
             if (visited[node_id]) continue;
             visited[node_id] = true;
-            if (nodes[node_id]->party->is_honest()) {
+            if (corruptedParties.find(nodes[node_id]->party) == nullptr) {
+                // the node is at an honest party
                 ++numReachableNodes;
             }
             for (auto e : inEdgesOf[node_id]) {

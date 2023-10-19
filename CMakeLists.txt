@@ -20,17 +20,23 @@ if(MSVC)
 else()
     set(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+
+    if(USE_OPENMP)
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fopenmp")
+    endif()
+    
     add_compile_options(-Wall -Wextra -MMD)
 endif()
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/immer")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include")
 
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/bgw")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/conversion")
+
 if(USE_OPENMP)
     message(">> Using OpenMP")
     find_package(OpenMP REQUIRED)
     link_libraries(OpenMP::OpenMP_CXX)
 endif()
-
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/bgw")
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/conversion")

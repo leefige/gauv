@@ -34,14 +34,14 @@ public:
      * @return true 
      * @return false 
      */
-    bool isRewritableSecret(const Graph &g, int node_id, std::unordered_set<const PartyDecl*> srcParties) {
+    bool isRewritableSecret(const Graph &g, int node_id, std::unordered_set<PartyDecl*> srcParties) {
         assert(node_id < (int)g.nodes.size());
         assert(g.T < g.partyCnt); // T + 1 <= N
 
         if (g.outEdgesOf[node_id].size() != g.partyCnt) // 是否恰好有 N 条出边
             return false;
         std::unordered_set<int> src_ids;
-        std::unordered_set<const PartyDecl*> parties;
+        std::unordered_set<PartyDecl*> parties;
 
         for (auto edge : g.outEdgesOf[node_id]) {
             if (edge->getInputs().size() != g.T + 1) // 是否每条出边恰好有 T + 1 个源点
@@ -59,7 +59,7 @@ public:
                     }
                 }
 
-                const PartyDecl* party = share->party;
+                PartyDecl* party = share->party;
                 if (parties.contains(party)) { // 确保每条出边的目标节点都是不同的 party
                     return false;
                 }
@@ -156,10 +156,10 @@ public:
  * 
  */
 class SharingTransformer : public Transformer {
-    std::unordered_set<const PartyDecl*> srcParties;
+    std::unordered_set<PartyDecl*> srcParties;
 
 public:
-    SharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {}
+    SharingTransformer(std::unordered_set<PartyDecl*> srcParties) : srcParties(srcParties) {}
 
     virtual ResultsType apply(const Graph &g) override {
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
@@ -235,10 +235,10 @@ public:
  * 
  */
 class RandomSharingTransformer : public Transformer {
-    std::unordered_set<const PartyDecl*> srcParties;
+    std::unordered_set<PartyDecl*> srcParties;
 
 public:
-    RandomSharingTransformer(std::unordered_set<const PartyDecl*> srcParties) : srcParties(srcParties) {
+    RandomSharingTransformer(std::unordered_set<PartyDecl*> srcParties) : srcParties(srcParties) {
         spdlog::trace("srcParties of random sharing transformer are:");
         for (auto party: srcParties)
             spdlog::trace("\t{}", party->to_string());
@@ -320,11 +320,11 @@ public:
  * 
  */
 class ReconstructionTransformer : public Transformer {
-    std::unordered_set<const PartyDecl*> srcParties;
+    std::unordered_set<PartyDecl*> srcParties;
 
     bool isRewritableReconstruction(const Graph& g, std::shared_ptr<Operation> edge) {
         assert(edge->getInputs().size() == g.partyCnt); // 应该恰好是把 N 个 share 收集起来做 reconstruction
-        std::unordered_set<const PartyDecl*> parties;
+        std::unordered_set<PartyDecl*> parties;
         int random_dst_cnt = 0;
         for (auto share: edge->getInputs()) {
             if (g.inEdgesOf[share->guid].size() == 1) {
@@ -351,7 +351,7 @@ class ReconstructionTransformer : public Transformer {
         return true;
     }
 public:
-    ReconstructionTransformer(std::unordered_set<const PartyDecl*> srcParties)
+    ReconstructionTransformer(std::unordered_set<PartyDecl*> srcParties)
         : srcParties(srcParties) {
             spdlog::trace("srcParties for reconstruction transformer:");
             for (auto party: srcParties)

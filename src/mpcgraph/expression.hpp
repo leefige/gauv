@@ -45,13 +45,13 @@ class Expression {
     std::string _name;
     Type* _type;
     Equation _eqn;
-    const PartyDecl* _party;
+    PartyDecl* _party;
 
    protected:
-    explicit Expression(Context& context, const std::string& name, Type* type, const Equation& eqn, const PartyDecl* party = nullptr) noexcept
+    explicit Expression(Context& context, const std::string& name, Type* type, const Equation& eqn, PartyDecl* party = nullptr) noexcept
         : _ctx(context), _name(name), _type(type), _eqn(eqn), _party(party) {}
 
-    explicit Expression(Context& context, const std::string& name, Type* type, const PartyDecl* party = nullptr) noexcept
+    explicit Expression(Context& context, const std::string& name, Type* type, PartyDecl* party = nullptr) noexcept
         : Expression(context, name, type, Equation::nulleqn, party) {}
 
    public:
@@ -68,7 +68,7 @@ class Expression {
     Equation& equation() { return _eqn; }
     const Equation& cequation() const { return _eqn; }
 
-    const PartyDecl* party() const { return _party; }
+    PartyDecl* party() const { return _party; }
 
     friend std::ostream& operator<<(std::ostream& o, const Expression& p) {
         return o << p.to_string();
@@ -87,7 +87,7 @@ class Literal : public Expression {
 
 class Placeholder : public Expression {
    protected:
-    explicit Placeholder(Context& context, const std::string& name, Type* type, const PartyDecl* party = nullptr) noexcept
+    explicit Placeholder(Context& context, const std::string& name, Type* type, PartyDecl* party = nullptr) noexcept
         : Expression(context, name, type, Equation(Operator::INPUT, {}), party) {}
 
    public:
@@ -156,7 +156,7 @@ class Secret : public Placeholder {
      * @exception var_redefinition The name of this secret has been
      * registered in this context.
      */
-    explicit Secret(Context& context, const std::string& name, Type* type, const PartyDecl* party)
+    explicit Secret(Context& context, const std::string& name, Type* type, PartyDecl* party)
         : Placeholder(context, name, type, party) {
         if (!context.register_secret(name, *this)) {
             throw var_redefinition(name);
@@ -188,7 +188,7 @@ class Randomness : public Placeholder {
      * @exception var_redefinition The name of this randomness has been
      * registered in this context.
      */
-    explicit Randomness(Context& context, const std::string& name, Type* type, const PartyDecl* party)
+    explicit Randomness(Context& context, const std::string& name, Type* type, PartyDecl* party)
         : Placeholder(context, name, type, party) {
         if (!context.register_randomness(name, this)) {
             throw var_redefinition(name);
@@ -211,7 +211,7 @@ class TypeCast : public Expression {
     TypeCast& operator=(TypeCast&&) = delete;
 
 public:
-    explicit TypeCast(Context& context, const std::string& name, Type* type, Expression* expr, const PartyDecl* party)
+    explicit TypeCast(Context& context, const std::string& name, Type* type, Expression* expr, PartyDecl* party)
         : Expression(context, name, type, Equation(Operator::TYPECAST, {expr}), party) {}
 
     virtual ~TypeCast() {}

@@ -24,7 +24,6 @@ void test_linear_bgw(size_t I, size_t T) {
         parties.push_back(party);
         secrets.push_back(secret);
     }
-    for (size_t i = 0; i < I; i++) parties[i]->set_corrupted();
 
     bgw::Context bgw_ctx(parties, T);
     std::vector<bgw::Variable> x;
@@ -60,6 +59,8 @@ int main(int argc, char* argv[]) {
         T = atoi(argv[2]);
     }
 
+    // change log pattern
+    spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 #ifdef DEBUG // if in the debug version
     spdlog::set_level(spdlog::level::trace); // default level is "info"
 #endif

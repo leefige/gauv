@@ -16,7 +16,7 @@ class Context;
 class PartyDecl {
     Context& _ctx;
     const std::string _name;
-    bool _corrupted = false;
+    bool _corrupted = false; // FIXME: now this field is obsoleted, replaced by the a set of corrupted parties in the Graph class
     int _id;
 
     PartyDecl(const PartyDecl&) = delete;
@@ -68,12 +68,24 @@ class PartyDecl {
         return ss.str();
     }
 
-    bool is_corrupted() const { return _corrupted; }
-    bool is_honest() const { return !_corrupted; }
-    void set_corrupted() { _corrupted = true; }
-    void set_honest() { _corrupted = false; }
+    bool is_corrupted() const {
+        throw "obsoleted";
+        return _corrupted;
+    }
+    bool is_honest() const {
+        throw "obsoleted";
+        return !_corrupted;
+    }
+    void set_corrupted() {
+        throw "obsoleted";
+        _corrupted = true;
+    }
+    void set_honest() {
+        throw "obsoleted";
+        _corrupted = false;
+    }
 
-    friend std::ostream& operator<<(std::ostream& o, const PartyDecl* p) {
+    friend std::ostream& operator<<(std::ostream& o, PartyDecl* p) {
         return o << p->to_string();
     }
 

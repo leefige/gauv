@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include <immer/set.hpp>
+
 #include <spdlog/spdlog.h>
 #include <omp.h>
 
@@ -17,27 +19,17 @@ namespace mpc {
 
 class Prover {
     const GraphBase& graph_base;
-    const std::vector<std::unordered_set<PartyDecl *>> equivalent_classes;
-    const std::vector<PartyDecl *> parties;
+    const std::vector<std::unordered_set<PartyDecl*>> equivalent_classes;
+    const std::vector<PartyDecl*> parties;
     const unsigned T;
 
     std::function<bool(Graph)> algorithm; // 这样写是为了更灵活，将来可以方便地替换这个核心算法
 
-    void search_all_possibilities(unsigned equivalent_class_id, unsigned corrupted_quota) {
+    std::vector<Graph> possible_start_graphs; // graph_base + possible corrupted party set
+    void search_all_possibilities(unsigned equivalent_class_id, unsigned corrupted_quota, immer::set<PartyDecl*> corrupted_parties) {
         if (equivalent_class_id == equivalent_classes.size()) {
             if (corrupted_quota == 0) {
-                Graph g(graph_base, parties.size(), T);
-
-                spdlog::info("Consider the case that the corrupted parties are:");
-                for (auto party: parties)
-                    if (party->is_corrupted())
-                        spdlog::info("\t{}", party->to_string());
-
-                auto begin_time = std::chrono::high_resolution_clock::now();
-                bool proved = algorithm(g);
-                auto end_time = std::chrono::high_resolution_clock::now();
-                spdlog::info("Proved? {}", proved);
-                spdlog::info("Time: {}\n\n", (end_time - begin_time).count() / 1e9);
+                possible_start_graphs.push_back(Graph(graph_base, parties.size(), T, corrupted_parties));
             }
             return;
         }
@@ -45,33 +37,35 @@ class Prover {
             // 在这个等价类里面选 i 个 corrupted_aprty
             unsigned j = 0;
             for (auto party : equivalent_classes[equivalent_class_id]) {
-                if (j < i)
-                    party->set_corrupted();
-                else
-                    party->set_honest();
+                search_all_possibilities(equivalent_class_id + 1, corrupted_quota - i, corrupted_parties.insert(party));
 
                 ++j;
+                if (j == i) break;
             }
-            search_all_possibilities(equivalent_class_id + 1, corrupted_quota - i);
         }
     }
 public:
     // 俺们现在的算法是这样的，每次选一个让秩函数下降最多的 transformation 来做。
-    static bool tryProving(Graph g, const std::vector<PartyDecl *> parties) {
+    static bool tryProving(Graph g, const std::vector<PartyDecl*> parties) {
+        spdlog::info("Consider the case that the corrupted parties are:");
+        for (auto party: parties)
+            if (g.corruptedParties.find(party) != nullptr)
+                spdlog::info("\t{}", party->to_string());
+
         // 定义 equivalent rewriters
         Transformer* additionRewriter = new AdditionTransformer();
 
         // ** 设置 source parties
-        std::unordered_set<const PartyDecl*> srcParties;
+        std::unordered_set<PartyDecl*> srcParties;
         for (auto party: parties) {
-            if (party->is_corrupted())
+            if (g.corruptedParties.find(party) != nullptr)
                 srcParties.insert(party);
         }
         // ** 加入 honest party 作为 source party 直到到达阈值 T
         for (auto party: parties) {
             if (srcParties.size() == g.T)
                 break;
-            if (party->is_honest())
+            if (g.corruptedParties.find(party) == nullptr) // the party is honest
                 srcParties.insert(party);
         }
         Transformer* sharingRewriter = new SharingTransformer(srcParties);
@@ -79,7 +73,8 @@ public:
 
         // ** 再多加一个 honest party 作为 source party，使得我们有 T + 1 个 source parties
         for (auto party: parties) {
-            if (party->is_honest() && !srcParties.contains(party)) {
+            if (g.corruptedParties.find(party) == nullptr // the party is honest
+                && !srcParties.contains(party)) {
                 srcParties.insert(party);
                 break;
             }
@@ -136,7 +131,7 @@ public:
             bool transformed = false;
             for (size_t node_id = 0; node_id < g.nodeSize(); ++node_id)
                 if (g.nodes[node_id] != nullptr) { // 为空表示这个节点已经被删掉了
-                    if (g.outDeg(node_id) == 0 && g.nodes[node_id]->party->is_honest()) { // 我们删掉 honest party 中出度为 0 的节点
+                    if (g.outDeg(node_id) == 0 && g.corruptedParties.find(g.nodes[node_id]->party) == nullptr) { // 我们删掉 honest party 中出度为 0 的节点
                         g = g.eliminateNode(g.nodes[node_id]);
 
                         transformed = true;
@@ -150,13 +145,15 @@ public:
         spdlog::info("Final potential: {}", to_string(g.potential()));
         spdlog::debug("Final graph:\n{}", g.to_string());
 
+        spdlog::info("Proved? {}", !g.hasBubble());
+
         return !g.hasBubble();
     }
 
     Prover(
         const GraphBase& graph_base,
-        std::vector<std::unordered_set<PartyDecl *>> equivalent_classes,
-        std::vector<PartyDecl *> parties,
+        std::vector<std::unordered_set<PartyDecl*>> equivalent_classes,
+        std::vector<PartyDecl*> parties,
         const unsigned T
     ): graph_base(graph_base), equivalent_classes(equivalent_classes), parties(parties), T(T) {
         algorithm = std::bind(tryProving, std::placeholders::_1, parties);
@@ -166,15 +163,31 @@ public:
     }
     ~Prover() {}
 
+    void try_all_possibilities() {
+        bool proved = true;
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(omp_get_num_procs()) reduction(&:proved)
+#endif
+        for (size_t i = 0; i < possible_start_graphs.size(); ++i) {
+            proved &= algorithm(possible_start_graphs[i]);
+        }
+        spdlog::info("Overall, Proved? {}", proved);
+    }
+
     void prove(unsigned I) {
-        search_all_possibilities(0, I);
+        possible_start_graphs.clear();
+
+        search_all_possibilities(0, I, immer::set<PartyDecl*>());
+
+        try_all_possibilities();
     }
     void prove() {
-#ifdef _OPENMP
-#pragma omp parallel num_threads(omp_get_num_procs())
-#endif
+        possible_start_graphs.clear();
+
         for (unsigned I = 1; I <= T; ++I)
-            prove(I);
+            search_all_possibilities(0, I, immer::set<PartyDecl*>());
+
+        try_all_possibilities();
     }
 
     // old function, updates required

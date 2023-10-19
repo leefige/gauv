@@ -51,7 +51,7 @@ class Node {
     // }
 
     Node() {}
-    Node(std::string name, const PartyDecl*& party, NodeGenre type = OTHERS)
+    Node(std::string name, PartyDecl*& party, NodeGenre type = OTHERS)
         : name(name),
           party(party),
           type(type) {}
@@ -63,7 +63,7 @@ class Node {
           party(rhs.party),
           type(rhs.type) {}
     Node(int guid) : guid(guid), hash(std::hash<int>{}(guid)) {}
-    Node(int guid, std::string name, const PartyDecl*& party, NodeGenre type = OTHERS)
+    Node(int guid, std::string name, PartyDecl*& party, NodeGenre type = OTHERS)
         : guid(guid),
           hash(std::hash<int>{}(guid)),
           name(name),
@@ -131,7 +131,7 @@ class Node {
     const int guid = -1; // graph unique id
     const size_t hash = 0;
     std::string name;
-    const PartyDecl* party;
+    PartyDecl* party;
     NodeGenre type;
 };
 

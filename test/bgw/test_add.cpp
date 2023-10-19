@@ -27,7 +27,6 @@ void test_bgw_add(size_t I, size_t T, size_t N, size_t M) {
             secrets.push_back(secret);
         }
     }
-    for (unsigned i = 0; i < I; i++) parties[i]->set_corrupted();
 
     bgw::Context bgw_ctx(parties, T);
     std::vector<bgw::Variable> x;
@@ -63,6 +62,8 @@ int main(int argc, char* argv[]) {
     auto N = atoi(argv[3]);
     auto M = atoi(argv[4]);
 
+    // change log pattern
+    spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 #ifdef DEBUG // if in the debug version
     spdlog::set_level(spdlog::level::trace); // default level is "info"
 #endif

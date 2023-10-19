@@ -9,7 +9,7 @@ class GraphBaseBuilder {
     std::vector<std::vector<std::shared_ptr<Operation>>> inEdgesOf, outEdgesOf;
     std::vector<Expression*> outputs;
 
-    std::shared_ptr<Node> newNode(std::string name, const PartyDecl* party, Node::NodeGenre type) {
+    std::shared_ptr<Node> newNode(std::string name, PartyDecl* party, Node::NodeGenre type) {
         int guid = nodes.size();
 
         assert(guid == (int)nodes.size());

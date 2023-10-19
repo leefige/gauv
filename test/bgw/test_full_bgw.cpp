@@ -54,6 +54,8 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // change log pattern
+    spdlog::set_pattern("[%H:%M:%S %z] [%n] [%^---%L---%$] [thread %t] %v");
 #ifdef DEBUG // if in the debug version
     spdlog::set_level(spdlog::level::trace); // default level is "info"
 #endif

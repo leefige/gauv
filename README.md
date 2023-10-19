@@ -14,6 +14,8 @@ sudo cp -r immer/immer/ /usr/local/include
 sudo cp -r spdlog/include/spdlog/ /usr/local/include
 ```
 
+Defaultly, parallel is utilized for speedup. Specifically, we rely on OpenMP. If clang is chosen as compiler, the runtime library `libomp-dev` need to be installed by package manager, e.g., `apt`.
+
 ## Build
 
 We have two versions: debug version and release version.
@@ -54,7 +56,8 @@ The main constraint for our program is the size of the BGW graph instead of the 
 
 We use a library spdlog for logging. There are six logging level (from small to large): `trace`, `debug`, `info`, `warn`, `error`, `critical`. The debug version records the logs of all levels, while the release version records the logs larger than `debug` (i.e., `info`, `warn`, `error` and `critical`).
 
-## Roadmap
+## Random Thoughts about Future
 
 - [ ] Xingyu feels that if it is possible to execute the graph, its design and implementation will be much better, and omitted details (e.g. the value range of this node) could be discovered and perfected.
 - [ ] Xingyu feels that more documentation will make our lives better.
+- [ ] The current code structure seems a little unnecessarily fat (calling `src/` from `test/`). Perhaps some more modern framework could help us package the things in `src/` in a clean way?

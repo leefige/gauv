@@ -22,7 +22,8 @@ int main(int argc, char* argv[]) {
     I = atoi(argv[1]); // 这里我们最好也还支持可变的 I
     T = atoi(argv[2]);
     N = atoi(argv[3]);
-
+    
+    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [thread %t] [%^%l%$] %v");
 #ifdef DEBUG // if in the debug version
     spdlog::set_level(spdlog::level::trace); // default level is "info"
 #endif

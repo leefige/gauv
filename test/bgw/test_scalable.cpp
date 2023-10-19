@@ -40,8 +40,7 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
     std::vector<PartyDecl*> parties;
     std::vector<Secret*> secrets;
     for (size_t i = 0; i < N; i++) {
-        auto party = new PartyDecl(ctx, "p_" + to_string(i));
-        parties.push_back(party);
+        parties.push_back(new PartyDecl(ctx, "p_" + to_string(i)));
     }
 
     for (size_t j = 0; j < M; j++) {
@@ -49,9 +48,6 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
             auto secret = new Secret(ctx, "x_" + to_string(i) + "_" + to_string(j), ArithFieldType::get_arith_field_type(), parties[i]);
             secrets.push_back(secret);
         }
-    }
-    for (size_t i = 0; i < I; i++) {
-        parties[i]->set_corrupted();
     }
 
     bgw::Context bgw_ctx(parties, T);
@@ -94,6 +90,7 @@ int main(int argc, char* argv[]) {
     auto N = atoi(argv[3]);
     auto M = atoi(argv[4]);
 
+    spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [thread %t] [%^%l%$] %v");
 #ifdef DEBUG // if in the debug version
     spdlog::set_level(spdlog::level::trace); // default level is "info"
 #endif
