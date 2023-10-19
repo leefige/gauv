@@ -159,12 +159,19 @@ class SharingTransformer : public Transformer {
     std::unordered_set<PartyDecl*> srcParties;
 
 public:
-    SharingTransformer(std::unordered_set<PartyDecl*> srcParties) : srcParties(srcParties) {}
+    SharingTransformer(std::unordered_set<PartyDecl*> srcParties) : srcParties(srcParties) {
+        spdlog::trace("srcParties for sharing transformer:");
+        for (auto party: srcParties)
+            spdlog::trace("\t{}", party->to_string());
+    }
 
     virtual ResultsType apply(const Graph &g) override {
         ResultsType results; // 这个是用来保存所有可能的 transformation 的结果的
         for (int node_id = 0; node_id < (int)g.nodes.size(); ++node_id) {
             // TODO: maybe this loop could be optimized by only enumerating a "potential nodes" list.
+
+            // 检查它是否是 random node
+            if (g.isRandomNode(node_id)) continue;
 
             // 检查 node_id 是否是那个用来生成整个 Shamir sharing 的 “secret”
             if (!isRewritableSecret(g, node_id, srcParties)) continue;
@@ -355,7 +362,7 @@ public:
         : srcParties(srcParties) {
             spdlog::trace("srcParties for reconstruction transformer:");
             for (auto party: srcParties)
-                spdlog::trace("\t{}", party->id());
+                spdlog::trace("\t{}", party->to_string());
         }
 
     virtual ResultsType apply(const Graph& g) override {

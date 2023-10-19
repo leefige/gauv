@@ -19,7 +19,12 @@ int main(int argc, char* argv[]) {
         cout << "Usage: " << " I(the number of corrupted parties) T(the threshold) N(the number of parties)" << endl;
         return 0;
     }
-    I = atoi(argv[1]); // 这里我们最好也还支持可变的 I
+    if (strcmp(argv[1], "I") == 0) {
+        // 在参数里，我们用“I“来支持表示可变的 I，在程序里我们用 0 来表示
+        I = 0;
+    } else {
+        I = atoi(argv[1]); 
+    }
     T = atoi(argv[2]);
     N = atoi(argv[3]);
     
@@ -120,5 +125,6 @@ int main(int argc, char* argv[]) {
     GraphBaseBuilder builder(outputs);
     GraphBase graph_base = builder.build();
     Prover prover(graph_base, equivalent_classes, parties, T);
-    prover.prove(I);
+    if (I == 0) prover.prove();
+    else prover.prove(I);
 }

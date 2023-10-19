@@ -76,7 +76,8 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
         },
         parties,
         T);
-    prover.prove(I);
+    if (I == 0) prover.prove();
+    else prover.prove(I);
 }
 
 // try: .\test_scalable 10 10 100 1
@@ -85,7 +86,12 @@ int main(int argc, char* argv[]) {
         cout << "Usage: " << argv[0] << " I(the number of corrupted parties) T(the threshold) N(the number of parties) M(how many inputs does each party have)" << endl;
         return 0;
     }
-    auto I = atoi(argv[1]); // FIXME: for now it seems that we do not test the case that the number of corrupted parties is no more than I, but only exact I.
+    size_t I;
+    if (strcmp(argv[1], "I") == 0) {
+        // 在参数里，我们用“I“来支持表示可变的 I，在程序里我们用 0 来表示
+        I = 0;
+    }
+    else I = atoi(argv[1]);
     auto T = atoi(argv[2]);
     auto N = atoi(argv[3]);
     auto M = atoi(argv[4]);

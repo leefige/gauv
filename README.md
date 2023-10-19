@@ -60,4 +60,3 @@ We use a library spdlog for logging. There are six logging level (from small to 
 
 - [ ] Xingyu feels that if it is possible to execute the graph, its design and implementation will be much better, and omitted details (e.g. the value range of this node) could be discovered and perfected.
 - [ ] Xingyu feels that more documentation will make our lives better.
-- [ ] The current code structure seems a little unnecessarily fat (calling `src/` from `test/`). Perhaps some more modern framework could help us package the things in `src/` in a clean way?

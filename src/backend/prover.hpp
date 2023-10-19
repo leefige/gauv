@@ -26,28 +26,58 @@ class Prover {
     std::function<bool(Graph)> algorithm; // 这样写是为了更灵活，将来可以方便地替换这个核心算法
 
     std::vector<Graph> possible_start_graphs; // graph_base + possible corrupted party set
-    void search_all_possibilities(unsigned equivalent_class_id, unsigned corrupted_quota, immer::set<PartyDecl*> corrupted_parties) {
+    void search_all_possibilities(
+            unsigned equivalent_class_id,
+            unsigned corrupted_quota,
+            immer::set<PartyDecl*> corrupted_parties,
+            bool is_quota_strict) {
+        assert(corrupted_quota >= 0);
+
+        spdlog::trace("==== search_all_possibilities (equivalent_class_id = {}, corrupted_quota = {}) ====", equivalent_class_id, corrupted_quota);
+        spdlog::trace("corrupted parties:");
+        for (auto party: corrupted_parties)
+            spdlog::trace("\t{}", party->to_string());
+
         if (equivalent_class_id == equivalent_classes.size()) {
-            if (corrupted_quota == 0) {
-                possible_start_graphs.push_back(Graph(graph_base, parties.size(), T, corrupted_parties));
-            }
+            if (corrupted_parties.size() > 0
+                && ((is_quota_strict && corrupted_quota == 0) || !is_quota_strict)) {
+                    spdlog::trace("Got one graph of {} corrupted parties.", corrupted_parties.size());
+                    possible_start_graphs.push_back(
+                        Graph(graph_base, parties.size(), T, corrupted_parties));
+                }
             return;
         }
-        for (unsigned i = 0; i <= std::min((std::size_t)corrupted_quota, equivalent_classes[equivalent_class_id].size()); ++i) {
-            // 在这个等价类里面选 i 个 corrupted_aprty
-            unsigned j = 0;
-            for (auto party : equivalent_classes[equivalent_class_id]) {
-                search_all_possibilities(equivalent_class_id + 1, corrupted_quota - i, corrupted_parties.insert(party));
 
-                ++j;
-                if (j == i) break;
+        spdlog::trace("the size of equivalent_classes[{}] is {}",
+            equivalent_class_id, equivalent_classes[equivalent_class_id].size());
+
+        // 先来处理在这个等价类里一个也不选的情况
+        search_all_possibilities(
+            equivalent_class_id + 1,
+            corrupted_quota,
+            corrupted_parties,
+            is_quota_strict);
+        unsigned i = 0;
+        for (auto party: equivalent_classes[equivalent_class_id]) {
+            if (i == corrupted_quota) {
+                break;
             }
+            
+            ++i;
+            corrupted_parties = corrupted_parties.insert(party);
+
+            // 在这个等价类里面选 i 个 corrupted_aprty
+            search_all_possibilities(
+                equivalent_class_id + 1,
+                corrupted_quota - i,
+                corrupted_parties,
+                is_quota_strict);
         }
     }
 public:
     // 俺们现在的算法是这样的，每次选一个让秩函数下降最多的 transformation 来做。
     static bool tryProving(Graph g, const std::vector<PartyDecl*> parties) {
-        spdlog::info("Consider the case that the corrupted parties are:");
+        spdlog::info("Consider the case that the corrupted parties are (T = {}):", g.T);
         for (auto party: parties)
             if (g.corruptedParties.find(party) != nullptr)
                 spdlog::info("\t{}", party->to_string());
@@ -58,7 +88,7 @@ public:
         // ** 设置 source parties
         std::unordered_set<PartyDecl*> srcParties;
         for (auto party: parties) {
-            if (g.corruptedParties.find(party) != nullptr)
+            if (g.corruptedParties.find(party) != nullptr) // corrupted parties
                 srcParties.insert(party);
         }
         // ** 加入 honest party 作为 source party 直到到达阈值 T
@@ -142,8 +172,8 @@ public:
         }
 
         spdlog::info("Final graph has {} nodes, {} edges.", g.nodeSize(), g.edgeSize());
-        spdlog::info("Final potential: {}", to_string(g.potential()));
-        spdlog::debug("Final graph:\n{}", g.to_string());
+        // spdlog::info("Final potential: {}", to_string(g.potential()));
+        // spdlog::debug("Final graph:\n{}", g.to_string());
 
         spdlog::info("Proved? {}", !g.hasBubble());
 
@@ -159,7 +189,7 @@ public:
         algorithm = std::bind(tryProving, std::placeholders::_1, parties);
 
         spdlog::info("Initial graph has {} nodes, {} edges.", graph_base.nodeSize(), graph_base.edgeSize());
-        spdlog::debug("Initial graph:\n{}", graph_base.to_string());
+        // spdlog::debug("Initial graph:\n{}", graph_base.to_string());
     }
     ~Prover() {}
 
@@ -177,15 +207,14 @@ public:
     void prove(unsigned I) {
         possible_start_graphs.clear();
 
-        search_all_possibilities(0, I, immer::set<PartyDecl*>());
+        search_all_possibilities(0, I, immer::set<PartyDecl*>(), true);
 
         try_all_possibilities();
     }
     void prove() {
         possible_start_graphs.clear();
 
-        for (unsigned I = 1; I <= T; ++I)
-            search_all_possibilities(0, I, immer::set<PartyDecl*>());
+        search_all_possibilities(0, T, immer::set<PartyDecl*>(), false);
 
         try_all_possibilities();
     }

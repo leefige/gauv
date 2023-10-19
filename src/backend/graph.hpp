@@ -39,7 +39,6 @@ class GraphBase {
             res = (res * 1000000009) + cur_res; // 23 is just some magic number
         }
         if (res == 0) {
-            spdlog::trace("WARNING: res == 0!");
             for (size_t i = 0; i < inEdgesOf.size(); ++i) {
                 uint64_t cur_res = 0;
 #ifdef _OPENMP
@@ -47,7 +46,6 @@ class GraphBase {
 #endif
                 for (std::shared_ptr<Operation> edge: inEdgesOf[i])
                     cur_res ^= edge->hash;
-                spdlog::trace("the cur_res of inEdgesOf[{}] (size = {}) is {}", i, inEdgesOf[i].size(), cur_res);
             }
         }
         return res;
@@ -319,8 +317,6 @@ public:
         return g;
     }
     Graph eliminateNode(std::shared_ptr<Node> node) const {
-        spdlog::debug("ELIMINATE_TAIL_NODE {}", node->getName());
-
         auto inEdgesOf = this->inEdgesOf.set(node->guid, OpVec()); // 删掉 node 的入边
         auto outEdgesOf = this->outEdgesOf.set(node->guid, OpVec()); // 删掉 node 的出边
 
