@@ -120,9 +120,6 @@ public:
     }
     inline size_t edgeSize() const {
         size_t edge_size = 0;
-#ifdef _OPENMP
-#pragma omp parallel num_threads(8) reduction(+:edge_size)
-#endif
         for (size_t i = 0; i < nodes.size(); ++i) {
             edge_size += outEdgesOf[i].size();
         }

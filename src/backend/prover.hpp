@@ -59,9 +59,7 @@ class Prover {
             is_quota_strict);
         unsigned i = 0;
         for (auto party: equivalent_classes[equivalent_class_id]) {
-            if (i == corrupted_quota) {
-                break;
-            }
+            if (i == corrupted_quota) break;
             
             ++i;
             corrupted_parties = corrupted_parties.insert(party);
