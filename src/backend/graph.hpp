@@ -31,9 +31,6 @@ class GraphBase {
         uint64_t res = 0;
         for (OpVec inEdges: inEdgesOf) {
             uint64_t cur_res = 0;
-#ifdef _OPENMP
-#pragma omp parallel num_threads(8) reduction(^:cur_res)
-#endif
             for (std::shared_ptr<Operation> edge: inEdges)
                 cur_res ^= edge->hash;
             res = (res * 1000000009) + cur_res; // 23 is just some magic number
@@ -41,9 +38,6 @@ class GraphBase {
         if (res == 0) {
             for (size_t i = 0; i < inEdgesOf.size(); ++i) {
                 uint64_t cur_res = 0;
-#ifdef _OPENMP
-#pragma omp parallel num_threads(8) reduction(^:cur_res)
-#endif
                 for (std::shared_ptr<Operation> edge: inEdgesOf[i])
                     cur_res ^= edge->hash;
             }
