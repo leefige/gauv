@@ -33,23 +33,14 @@ class Prover {
             bool is_quota_strict) {
         assert(corrupted_quota >= 0);
 
-        spdlog::trace("==== search_all_possibilities (equivalent_class_id = {}, corrupted_quota = {}) ====", equivalent_class_id, corrupted_quota);
-        spdlog::trace("corrupted parties:");
-        for (auto party: corrupted_parties)
-            spdlog::trace("\t{}", party->to_string());
-
         if (equivalent_class_id == equivalent_classes.size()) {
             if (corrupted_parties.size() > 0
                 && ((is_quota_strict && corrupted_quota == 0) || !is_quota_strict)) {
-                    spdlog::trace("Got one graph of {} corrupted parties.", corrupted_parties.size());
                     possible_start_graphs.push_back(
                         Graph(graph_base, parties.size(), T, corrupted_parties));
                 }
             return;
         }
-
-        spdlog::trace("the size of equivalent_classes[{}] is {}",
-            equivalent_class_id, equivalent_classes[equivalent_class_id].size());
 
         // 先来处理在这个等价类里一个也不选的情况
         search_all_possibilities(
@@ -128,7 +119,7 @@ public:
                 for (auto& [node, new_g]: transformer->apply(g)) {
                     // spdlog::trace("{} considers {}, potential becomes {}, hash becomes {}", transformer->to_string(), node->to_string(), to_string(new_g.potential()), new_g.hash);
 
-                    if (new_g.potential() <= g.potential() &&
+                    if (new_g.potential() < g.potential() &&
                         (min_node == nullptr || new_g.potential() < min_new_g.potential()) &&
                         !considered_graphs.contains(new_g)) {
                         min_node = std::move(node);

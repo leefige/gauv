@@ -171,7 +171,7 @@ public:
             // TODO: maybe this loop could be optimized by only enumerating a "potential nodes" list.
 
             // 检查它是否是 random node
-            if (g.isRandomNode(node_id)) continue;
+            // if (g.isRandomNode(node_id)) continue;
 
             // 检查 node_id 是否是那个用来生成整个 Shamir sharing 的 “secret”
             if (!isRewritableSecret(g, node_id, srcParties)) continue;

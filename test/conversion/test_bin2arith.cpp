@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
     auto masked_bin_sharing = b + global_r_bin;
 
     // reconstruct
-    auto &masked_bin(masked_bin_sharing.yield(parties[0], "b_xor_r_bin")); // 2023-07-21 19:44:00 感觉这个图应该还没建对，在 1 2 3 时，reconstruction 只有 3 个，但应该是 2 个
+    auto &masked_bin(masked_bin_sharing.yield(parties[0], "b_xor_r_bin"));
     TypeCast* masked_arith = new TypeCast(ctx,
         "b_xor_r_arith",
         ArithFieldType::get_arith_field_type(),

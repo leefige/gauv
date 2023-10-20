@@ -4,6 +4,9 @@
 #include <cassert>
 #include <memory>
 #include <sstream>
+#include <random>
+#include <vector>
+#include <algorithm>
 
 #include <immer/flex_vector.hpp>
 
@@ -25,7 +28,7 @@ inline int find(immer::flex_vector<T> vec, T item) {
     return vec.size();
 }
 
-typedef std::tuple<int, int, int> Potential;
+typedef std::tuple<int, int, int, int> Potential;
 
 std::string to_string(Potential p) {
     std::stringstream ss;

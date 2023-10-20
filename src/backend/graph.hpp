@@ -19,6 +19,7 @@
 #include "common.hpp"
 #include "node.hpp"
 #include "operation.hpp"
+
 namespace mpc {
 
 /**
@@ -31,16 +32,12 @@ class GraphBase {
         uint64_t res = 0;
         for (OpVec inEdges: inEdgesOf) {
             uint64_t cur_res = 0;
+#ifdef _OPENMP
+#pragma omp parallel num_threads(8) reduction(^:cur_res)
+#endif
             for (std::shared_ptr<Operation> edge: inEdges)
                 cur_res ^= edge->hash;
-            res = (res * 1000000009) + cur_res; // 23 is just some magic number
-        }
-        if (res == 0) {
-            for (size_t i = 0; i < inEdgesOf.size(); ++i) {
-                uint64_t cur_res = 0;
-                for (std::shared_ptr<Operation> edge: inEdgesOf[i])
-                    cur_res ^= edge->hash;
-            }
+            res = (res * 1000000009) + cur_res; // 1000000009 is just some magic number
         }
         return res;
     }
@@ -359,7 +356,7 @@ public:
         // init search
         std::vector<bool> visited(nodeSize(), false);
         std::queue<size_t> q;
-        // second term: the honest parties' nodes that are reachable to the corrupted parties
+        // the second term: the honest parties' nodes that are reachable to the corrupted parties
         // let's start from the corrupted parties' nodes
         for (size_t node_id = 0; node_id < nodeSize(); ++node_id)
             if (nodes[node_id] != nullptr &&
@@ -382,7 +379,12 @@ public:
                 }
             }
         }
-        return Potential{bubbleCnt(), numReachableNodes, nodeSize()};
+        // the fourth term: the number of 0-outdegree nodes
+        int sumTopoRandomNodes = 0;
+        for (size_t node_id = 0; node_id < nodeSize(); ++node_id)
+            if (nodes[node_id] != nullptr && inDeg(node_id) == 0 && corruptedParties.find(nodes[node_id]->party) == nullptr)
+                sumTopoRandomNodes += nodeSize() - node_id;
+        return Potential{bubbleCnt(), numReachableNodes, nodeSize(), sumTopoRandomNodes};
     }
 
     struct Hash
