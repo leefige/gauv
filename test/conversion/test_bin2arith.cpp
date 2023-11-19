@@ -114,6 +114,8 @@ int main(int argc, char* argv[]) {
         outputs.push_back(&output_sharing_i.yield(parties[i], "beta_" + std::to_string(i)));
     }
 
+    spdlog::info("There are {} gates.", bgw_ctx.gateNum());
+
     // 把 party 分成若干个等价类
     std::unordered_set<PartyDecl *> class0({ parties[0] });
     std::unordered_set<PartyDecl *> class1;

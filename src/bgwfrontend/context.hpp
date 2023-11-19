@@ -14,7 +14,11 @@ class Context {
     PartyVec _parties;
     size_t _T;
 
-   public:
+public:
+    int addCounter = 0;
+    int constMulCounter = 0;
+    int mulCounter = 0;
+    
     Context() {}
     Context(PartyVec& parties, size_t T) : _parties(parties), _T(T) {}
 
@@ -24,5 +28,13 @@ class Context {
 
     void addParty(mpc::PartyDecl* party) { _parties.push_back(party); }
     void setT(size_t T) { _T = T; }
+
+    void registerAddition() { ++addCounter; }
+    void registerConstMul() { ++constMulCounter; }
+    void registerMul() { ++mulCounter; }
+
+    inline int gateNum() {
+        return addCounter + constMulCounter + mulCounter;
+    }
 };
 }  // namespace bgw
