@@ -43,11 +43,13 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
         parties.push_back(new PartyDecl(ctx, "p_" + to_string(i)));
     }
 
+    auto rand_party = [&parties, &N]() {
+        return parties[rand() % N];
+    };
+
     for (size_t j = 0; j < M; j++) {
-        for (size_t i = 0; i < N; i++) {
-            auto secret = new Secret(ctx, "x_" + to_string(i) + "_" + to_string(j), ArithFieldType::get_arith_field_type(), parties[i]);
-            secrets.push_back(secret);
-        }
+        auto secret = new Secret(ctx, "x_" + to_string(j), ArithFieldType::get_arith_field_type(), rand_party());
+        secrets.push_back(secret);
     }
 
     bgw::Context bgw_ctx(parties, T);
@@ -59,7 +61,7 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
     *var = *secrets[0];
     *var = c * *var;
     *protocol = *var;
-    for (size_t i = 1; i < M * N; i++) {
+    for (size_t i = 1; i < M; i++) {
         *var = *secrets[i];
         rand_op(*protocol, *var);
     }
@@ -70,10 +72,13 @@ void test_bgw_scalable(size_t I, size_t T, size_t N, size_t M) {
 
     GraphBaseBuilder builder(outputs);
     GraphBase graph_base = builder.build();
+    std::vector<std::unordered_set<PartyDecl *>> equivalent_classes;
+    for (int i = 0; i < N; ++i)
+        equivalent_classes.push_back(
+            unordered_set<PartyDecl*>({parties[i]})
+        );
     Prover prover(graph_base,
-        vector<unordered_set<PartyDecl*>>{
-            unordered_set<PartyDecl*>(parties.begin(), parties.end())
-        },
+        equivalent_classes,
         parties,
         T);
     if (I == 0) prover.prove();
