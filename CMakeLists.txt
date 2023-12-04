@@ -32,8 +32,8 @@ endif()
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/external/immer")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include")
 
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/bgw")
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/conversion")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/example/bgw")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/example/conversion")
 
 if(USE_OPENMP)
     message(">> Using OpenMP")
