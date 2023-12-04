@@ -25,12 +25,12 @@ else()
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fopenmp")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fopenmp")
     endif()
-    
+
     add_compile_options(-Wall -Wextra -MMD)
 endif()
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/immer")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/external/immer")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include")
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/bgw")
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/test/conversion")

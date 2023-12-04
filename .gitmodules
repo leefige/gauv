@@ -1,6 +1,0 @@
-[submodule "immer"]
-	path = immer
-	url = https://github.com/arximboldi/immer.git
-[submodule "spdlog"]
-	path = spdlog
-	url = git@github.com:gabime/spdlog.git
