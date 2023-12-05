@@ -1,20 +1,18 @@
-# MPC verifier
+# GAuV
+
+GAuV is a automated framework for verifying the perfect security of multiparty computation (MPC) protocol against semi-honest adversaries.
+GAuV accepts a MPC protocol representation and produces YES/UNKNOWN in a push-button style (without any other human intervention).
 
 ## Dependencies
 
-Since we rely on third-party libraries (immer and spdlog), after cloning this repository, you could use the following commands at the root path of this repository to fetch the third-party libraries.
-```bash
-git submodule init
-git submodule update
-```
-
-Then, please copy `immer/immer/` and `spdlog/include/spdlog/` somewhere in your *include* path, for example,
-```bash
+We rely on two third party projects: [immer](https://github.com/immerjs/immer) and [spdlog](https://github.com/gabime/spdlog), which has been contained in this repository.
+Please recursively copy the folders, `immer/immer/` and `spdlog/include/spdlog/`, into your *include* path, for example,
+```sh
 sudo cp -r immer/immer/ /usr/local/include
 sudo cp -r spdlog/include/spdlog/ /usr/local/include
 ```
 
-Defaultly, parallel is utilized for speedup. Specifically, we rely on OpenMP. If clang is chosen as compiler, the runtime library `libomp-dev` need to be installed by package manager, e.g., `apt`.
+We rely on [OpenMP](https://www.openmp.org/) to leverage prallel for speedup. Usually, the developing library of OpenMP can be installed by a package manager, e.g., `apt install libomp-dev`.
 
 ## Build
 
@@ -26,7 +24,7 @@ Debug version:
 ```sh
 mkdir -p build && cd build
 cmake .. -B Debug -DCMAKE_BUILD_TYPE=Debug
-cmake --build Debug --target test_add # "test_add" could be any `.cpp`-file to test, like, "test_bin2arith"
+cmake --build Debug
 ```
 
 Release version:
@@ -37,26 +35,36 @@ cmake .. -B Release -DCMAKE_BUILD_TYPE=Release
 cmake --build Release
 ```
 
-## BGW
+## How to run?
 
-The main constraint for our program is the size of the BGW graph instead of the running time.
+The protocols are described in `example/`.
+At present, we always require some arguments like the number of parties.
 
-1. `test/bgw/test_add 8 10 21 100`
-2. `test/bgw/test_mul 8 10 21 30` (potential OOM)
-3. Loop over I from 1 to 5 for `test/bgw/test_mul I 5 11 20`
-4. Try different arguments for `test/bgw/test_scalable`, e.g.
-   1. `test/bgw/test_scalable 20 20 115 1` (3,078,550 nodes, 2,949,635 edges)
-   2. `test/bgw/test_scalable 20 20 50 5` (1,374,800 nodes, 1,247,550 edges)
+### BGW
 
-## Conversion
+We can try to verify a BGW protocol as follows, where the argument `I` means all possible valid corrupted party sets are considered, `2` means the threshold of the number of corrupted parties, `5` means the number of parties, and `10` means the size of circuits.
+Given the size of the circuits, a random circuit of certain size will be generated, and accordingly a BGW protocol.
 
-`test/conversion/test_bin2arith 1 1 3`
+```sh
+example/bgw/test_scalable I 2 5 10
+```
 
-## Logging
+### B2A
 
-We use a library spdlog for logging. There are six logging level (from small to large): `trace`, `debug`, `info`, `warn`, `error`, `critical`. The debug version records the logs of all levels, while the release version records the logs larger than `debug` (i.e., `info`, `warn`, `error` and `critical`).
+We can try to verify a B2A (binary to arithmetic) protocol, in which the underlying secret sharing scheme is Shamir secret sharing as BGW protocols, as follows, where `I` means all possible valid corrupted party sets are considered, `1` means the threshold of the number of corrupted parties, and `3` means the number of parties.
 
-## Random Thoughts about Future
+```sh
+example/conversion/test_bin2arith I 1 3
+```
 
-- [ ] Xingyu feels that if it is possible to execute the graph, its design and implementation will be much better, and omitted details (e.g. the value range of this node) could be discovered and perfected.
-- [ ] Xingyu feels that more documentation will make our lives better.
+### Reproduce the Evaluation
+
+To reproduce the evaluation in our S&P'24 paper, run the shell scripts, `script-bin2arith.sh` and `script-scalable.sh`, in `sp24-scripts/`.
+
+## Note
+
+This project is developed only for research purpose.
+Apologize that our code may be kind of messy and we don't have detailed documentation.
+If you have any questions, please contact us!
+
+An important missing part of this project is an 'interpreter' to run the protocol, if anyone is interested to develop this interpreter, please go for it!
