@@ -63,8 +63,6 @@ To reproduce the evaluation in our S&P'24 paper, run the shell scripts, `script-
 
 ## Note
 
-This project is developed only for research purpose.
-Apologize that our code may be kind of messy and we don't have detailed documentation.
-If you have any questions, please contact us!
+This project is developed only for research purpose. If you have any questions, please contact us!
 
-An important missing part of this project is an 'interpreter' to run the protocol, if anyone is interested to develop this interpreter, please go for it!
+An undeveloped part of this project is an 'interpreter' for running the protocol, if anyone is interested in developing this further, please go for it!
