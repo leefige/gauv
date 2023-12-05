@@ -5,12 +5,7 @@ GAuV accepts a MPC protocol representation and produces YES/UNKNOWN in a push-bu
 
 ## Dependencies
 
-We rely on two third party projects: [immer](https://github.com/immerjs/immer) and [spdlog](https://github.com/gabime/spdlog), which has been contained in this repository.
-Please recursively copy the folders, `immer/immer/` and `spdlog/include/spdlog/`, into your *include* path, for example,
-```sh
-sudo cp -r immer/immer/ /usr/local/include
-sudo cp -r spdlog/include/spdlog/ /usr/local/include
-```
+We rely on two third party projects: [immer](https://github.com/immerjs/immer) and [spdlog](https://github.com/gabime/spdlog), which you can see in `external/`.
 
 We rely on [OpenMP](https://www.openmp.org/) to leverage prallel for speedup. Usually, the developing library of OpenMP can be installed by a package manager, e.g., `apt install libomp-dev`.
 
