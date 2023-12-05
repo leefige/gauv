@@ -60,4 +60,4 @@ To reproduce the evaluation in our S&P'24 paper, run the shell scripts, `script-
 
 This project is developed only for research purpose. If you have any questions, please contact us!
 
-An undeveloped part of this project is an 'interpreter' for running the protocol, if anyone is interested in developing this further, please go for it!
+An unfinished part of this project, which is located in `src/mpclib`, is an 'interpreter' for running the protocol, if anyone is interested in developing this further, please go for it!
