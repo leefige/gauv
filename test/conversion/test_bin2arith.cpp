@@ -117,12 +117,18 @@ int main(int argc, char* argv[]) {
     spdlog::info("There are {} gates.", bgw_ctx.gateNum());
 
     // 把 party 分成若干个等价类
-    std::unordered_set<PartyDecl *> class0({ parties[0] });
-    std::unordered_set<PartyDecl *> class1;
-    for (int i = 1; i < T; ++i) class1.insert(parties[i]);
-    std::unordered_set<PartyDecl *> class2;
-    for (int i = T; i < N; ++i) class2.insert(parties[i]);
-    std::vector<std::unordered_set<PartyDecl *>> equivalent_classes({class0, class1, class2});
+    // std::unordered_set<PartyDecl *> class0({ parties[0] });
+    // std::unordered_set<PartyDecl *> class1;
+    // for (int i = 1; i < T; ++i) class1.insert(parties[i]);
+    // std::unordered_set<PartyDecl *> class2;
+    // for (int i = T; i < N; ++i) class2.insert(parties[i]);
+    // std::vector<std::unordered_set<PartyDecl *>> equivalent_classes({class0, class1, class2});
+
+    std::vector<std::unordered_set<PartyDecl *>> equivalent_classes;
+    for (int i = 0; i < N; ++i)
+        equivalent_classes.push_back(
+            unordered_set<PartyDecl*>({parties[i]})
+        );
 
     GraphBaseBuilder builder(outputs);
     GraphBase graph_base = builder.build();
