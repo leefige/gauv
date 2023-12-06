@@ -1,4 +1,4 @@
-# GAuV
+# GAuV: A Graph-Based Automated Verification Framework for Perfect Semi-Honest Security of Multiparty Computation Protocols
 
 GAuV is a automated framework for verifying the perfect security of multiparty computation (MPC) protocol against semi-honest adversaries.
 GAuV accepts a MPC protocol representation and produces YES/UNKNOWN in a push-button style (without any other human intervention).
