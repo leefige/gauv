@@ -59,6 +59,19 @@ example/conversion/test_bin2arith I 1 3
 
 To reproduce the evaluation in our S&P'24 paper, run the shell scripts, `script-bin2arith.sh` and `script-scalable.sh`, in `sp24-scripts/`.
 
+## Citation
+
+If you find our work helpful, feel free to cite our [paper](https://doi.org/10.1109/SP54263.2024.00131).
+
+```bibtex
+@INPROCEEDINGS {gauv2024,
+  author = {Xingyu Xie and Yifei Li and Wei Zhang and Tuowei Wang and Shizhen Xu and Jun Zhu and Yifan Song},
+  booktitle = {2024 IEEE Symposium on Security and Privacy (SP)},
+  title = {GAuV: A Graph-Based Automated Verification Framework for Perfect Semi-Honest Security of Multiparty Computation Protocols},
+  year = {2024}
+}
+```
+
 ## Note
 
 This project is developed only for research purpose. If you have any questions, please contact us!
