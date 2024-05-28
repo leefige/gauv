@@ -61,7 +61,7 @@ To reproduce the evaluation in our S&P'24 paper, run the shell scripts, `script-
 
 ## Citation
 
-If you find our work helpful, feel free to cite our [paper](https://doi.org/10.1109/SP54263.2024.00131).
+If you find our work helpful, feel free to cite our [paper](https://doi.ieeecomputersociety.org/10.1109/SP54263.2024.00131).
 
 ```bibtex
 @INPROCEEDINGS {gauv2024,
